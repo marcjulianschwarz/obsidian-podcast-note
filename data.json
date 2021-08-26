@@ -2,7 +2,7 @@
   "showImage": true,
   "showDesc": true,
   "podcastService": "spotify",
-  "podcastTemplate": "# {{Title}} \n {{Image}} \n ## Beschreibung: \n {{Description}} \n ## Notizen: \n",
-  "newNote": false,
-  "fileName": "Podcast"
+  "podcastTemplate": "# {{Title}} \n {{Image}} \n ## Description: \n {{Description}} \n ## Notizen: \n",
+  "newNote": true,
+  "fileName": "{{Date}} - Podcast Note"
 }

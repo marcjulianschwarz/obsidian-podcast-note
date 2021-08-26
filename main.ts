@@ -214,7 +214,7 @@ class PodcastNoteSettingTab extends PluginSettingTab {
 
 		new Setting(containerEl)
 				.setName('Template')
-				.setDesc("you can define your own template.")
+				.setDesc("you can define your own template. Available placeholders are {{Title}}, {{Image}}, {{Description}}.")
 				.addTextArea(textarea => textarea
 					.setValue(this.plugin.settings.podcastTemplate)
 					.onChange(async () => {
@@ -235,8 +235,8 @@ class PodcastNoteSettingTab extends PluginSettingTab {
 				)
 
 		new Setting(containerEl)
-				.setName('Filename')
-				.setDesc('Filename when "New note" is selected.')
+				.setName('Filename template')
+				.setDesc('Filename template when "New note" is selected. Available placeholders are {{Title}}, {{Date}}')
 				.addTextArea(textarea => textarea
 					.setValue(this.plugin.settings.fileName)
 					.onChange(async () => {
