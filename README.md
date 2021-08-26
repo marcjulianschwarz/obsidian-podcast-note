@@ -17,7 +17,7 @@ Of course you can also specify a keyboard shortcut to trigger the prompt.
 
 ## Settings
 
-![](https://raw.githubusercontent.com/marcjulianschwarz/podcast-note/main/assets/settings.png?token=AQFTQOXH5LGSTO22PY4AKCDBE63TS)
+![](https://raw.githubusercontent.com/marcjulianschwarz/podcast-note/main/assets/settings.png)
 
 
 ### 1. Template
