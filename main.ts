@@ -1,17 +1,21 @@
-import { App, Modal, Notice, Plugin, PluginSettingTab, Setting } from 'obsidian';
+import { App, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting } from 'obsidian';
 
 interface PodcastNoteSettings {
 	showImage: boolean,
 	showDesc: boolean,
 	podcastService: string,
-	podcastTemplate: string
+	podcastTemplate: string,
+	newNote: boolean,
+	fileName: string
 }
 
 const DEFAULT_SETTINGS: PodcastNoteSettings = {
 	showImage: true,
 	showDesc: true,
 	podcastService: "apple",
-	podcastTemplate: "# {{Title}} \n {{Image}} \n ## Description: \n {{Description}} \n ## Notes: \n"
+	podcastTemplate: "# {{Title}} \n {{Image}} \n ## Description: \n {{Description}} \n ## Notes: \n",
+	newNote: false,
+	fileName: ""
 }
 
 export default class PodcastNote extends Plugin {
@@ -80,7 +84,18 @@ class PodcastNoteModal extends Modal {
 				let root = this.getParsedHtml(result);
 				try {
 					let podcast_info = this.getMetaDataForPodcast(root)
-					this.addAtCursor(podcast_info)
+					let title = podcast_info[1]
+					let podcast_string = podcast_info[0]
+
+					if (this.plugin.settings.newNote){
+						
+						let fileName = this.plugin.settings.fileName.replace("{{Title}}", title)
+						this.addToNewNote(podcast_string, fileName)
+				
+					} else {
+						this.addAtCursor(podcast_string)
+					}
+
 				}catch{
 					new Notice("This URL is not valid. Check settings.")
 				}
@@ -147,15 +162,21 @@ class PodcastNoteModal extends Modal {
 							.replace("{{Image}}", image_link)
 							.replace("{{Description}}", desc)
 
-		return podcastTemplate
+		return [podcastTemplate, title]
 	}
 
 
 	addAtCursor(s: string){
-		let mdView = this.app.workspace.activeLeaf.view;
+		let mdView = this.app.workspace.getActiveViewOfType(MarkdownView);
         let doc = mdView.editor;
 		var currentLine = doc.getCursor();
         doc.replaceRange(s, currentLine, currentLine);
+	}
+
+	addToNewNote(s: string, fileName: string){
+		fileName = fileName.replace("/", "").replace("\\", "").replace(":", "").replace(":", "")
+		this.app.vault
+		this.app.vault.create(fileName + ".md", s);
 	}
 
 	onClose() {
@@ -201,6 +222,30 @@ class PodcastNoteSettingTab extends PluginSettingTab {
 						await this.plugin.saveSettings();
 					})
 				)
+
+		new Setting(containerEl)
+				.setName('New note')
+				.setDesc('Create new note (default: insert at cursor)')
+				.addToggle(toggle => toggle
+					.setValue(this.plugin.settings.newNote)
+					.onChange(async () => {
+						this.plugin.settings.newNote = toggle.getValue();
+						await this.plugin.saveSettings();
+					})
+				)
+
+		new Setting(containerEl)
+				.setName('Filename')
+				.setDesc('Filename when "New note" is selected.')
+				.addTextArea(textarea => textarea
+					.setValue(this.plugin.settings.fileName)
+					.onChange(async () => {
+						this.plugin.settings.fileName = textarea.getValue()
+						await this.plugin.saveSettings()
+					})
+				)
+
+		
 				
 		
 		new Setting(containerEl)
