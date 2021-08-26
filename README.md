@@ -19,20 +19,21 @@ Of course you can also specify a keyboard shortcut to trigger the prompt.
 
 ![](https://raw.githubusercontent.com/marcjulianschwarz/podcast-note/main/assets/settings.png?token=AQFTQOXH5LGSTO22PY4AKCDBE63TS)
 
-### 1. Podcast Service
-Here you can choose the podcast service that you are using. Right now there are the two options "Apple Podcast" and "Spotify Podcast".
 
-### 2. Template
+### 1. Template
 Here you can specify how the metadata for your podcast notes looks like. 
 Use these three placeholders:
 - {{Title}}
 - {{Image}}
 - {{Description}}
+- {{Link}}
+- {{Date}}
 
-### 3. New note
+### 2. New note template
 Specify whether the podcast note will be inserted at your cursor or whether a new note will be added.
 You can also use a template for the filename.
+Placeholders:
+- {{Title}}
+- {{Date}}
 
-### 4. Toggle image and description
-In the last two settings you can toggle whether the image and description will be added to your note.
-
+### 3. Folder
