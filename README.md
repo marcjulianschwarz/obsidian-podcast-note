@@ -26,6 +26,10 @@ Use these three placeholders:
 - {{Image}}
 - {{Description}}
 
-### 3. Toggles
+### 3. New note
+Specify whether the podcast note will be inserted at your cursor or whether a new note will be added.
+You can also use a template for the filename.
+
+### 4. Toggle image and description
 In the last two settings you can toggle whether the image and description will be added to your note.
 
