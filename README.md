@@ -13,7 +13,7 @@ Of course you can also specify a keyboard shortcut to trigger the prompt.
 
 ## Demo
 
-
+----------GIF--------- 
 
 ## Settings
 
