@@ -73,9 +73,13 @@ class PodcastNoteModal extends Modal {
 			let url = contentEl.querySelector("input").value
 			let response = this.getHttpsResponse(url);
 
+			response.catch((reason) => {
+				new Notice("The URL is invalid...")
+			});
 			
 				new Notice("Loading Podcast Info")
 				response.then((result) => {
+
 
 					try{
 						let root = this.getParsedHtml(result);
