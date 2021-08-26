@@ -1,0 +1,6 @@
+{
+  "showImage": true,
+  "showDesc": true,
+  "podcastService": "apple",
+  "podcastTemplate": "# {{Title}} \n {{Image}} \n ## Beschreibung: \n {{Description}} \n ## Notizen: \n"
+}
