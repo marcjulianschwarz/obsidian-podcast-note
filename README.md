@@ -17,7 +17,7 @@ Of course you can also specify a keyboard shortcut to trigger the prompt.
 
 ## Settings
 
-![](https://github.com/marcjulianschwarz/podcast-note/tree/main/assets/settings.png)
+![](https://raw.githubusercontent.com/marcjulianschwarz/podcast-note/main/assets/settings.png?token=AQFTQOXH5LGSTO22PY4AKCDBE63TS)
 
 ### 1. Podcast Service
 Here you can choose the podcast service that you are using. Right now there are the two options "Apple Podcast" and "Spotify Podcast".
