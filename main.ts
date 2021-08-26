@@ -71,32 +71,30 @@ class PodcastNoteModal extends Modal {
 		contentEl.querySelector("button").addEventListener("click", () => {
 
 			let url = contentEl.querySelector("input").value
-
-
 			let response = this.getHttpsResponse(url);
-			new Notice("Loading Podcast Info")
-			response.then((result) => {
 
-				let root = this.getParsedHtml(result);
-				try {
-					let podcastInfo = this.getMetaDataForPodcast(root, url)
-					let title = podcastInfo[1]
-					let podcastString = podcastInfo[0]
+			
+				new Notice("Loading Podcast Info")
+				response.then((result) => {
 
-					if (this.plugin.settings.newNote){
-						
-						let fileName = this.plugin.settings.fileName.replace("{{Title}}", title).replace("{{Date}}", Date.now().toString())
-						this.addToNewNote(podcastString, fileName)
-				
-					} else {
-						this.addAtCursor(podcastString)
+					try{
+						let root = this.getParsedHtml(result);
+
+						let podcastInfo = this.getMetaDataForPodcast(root, url)
+						let title = podcastInfo[1]
+						let podcastString = podcastInfo[0]
+
+						if (this.plugin.settings.newNote){		
+							let fileName = this.plugin.settings.fileName.replace("{{Title}}", title).replace("{{Date}}", Date.now().toString())
+							this.addToNewNote(podcastString, fileName)
+						} else {
+							this.addAtCursor(podcastString)
+						}
+					}catch{
+						new Notice("The URL is invalid or incomplete.")
 					}
-
-				}catch{
-					new Notice("This URL is not valid. Check settings.")
-				}
-
-			});
+				})
+			
             this.close()
 		});
 	}
@@ -116,7 +114,7 @@ class PodcastNoteModal extends Modal {
 			host = appleHost
 			podcastPath = url.split(host)[1]
 		} else{
-			
+			new Notice("This is not a valid URL");
 		}
 
 		const https = require('https')
