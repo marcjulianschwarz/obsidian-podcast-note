@@ -1,18 +1,12 @@
 import { App, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting } from 'obsidian';
 
 interface PodcastNoteSettings {
-	showImage: boolean,
-	showDesc: boolean,
-	podcastService: string,
 	podcastTemplate: string,
 	newNote: boolean,
 	fileName: string
 }
 
 const DEFAULT_SETTINGS: PodcastNoteSettings = {
-	showImage: true,
-	showDesc: true,
-	podcastService: "apple",
 	podcastTemplate: "# {{Title}} \n {{Image}} \n ## Description: \n {{Description}} \n ## Notes: \n",
 	newNote: false,
 	fileName: ""
@@ -77,23 +71,25 @@ class PodcastNoteModal extends Modal {
 		contentEl.querySelector("button").addEventListener("click", () => {
 
 			let url = contentEl.querySelector("input").value
+
+
 			let response = this.getHttpsResponse(url);
 			new Notice("Loading Podcast Info")
 			response.then((result) => {
 
 				let root = this.getParsedHtml(result);
 				try {
-					let podcast_info = this.getMetaDataForPodcast(root)
-					let title = podcast_info[1]
-					let podcast_string = podcast_info[0]
+					let podcastInfo = this.getMetaDataForPodcast(root, url)
+					let title = podcastInfo[1]
+					let podcastString = podcastInfo[0]
 
 					if (this.plugin.settings.newNote){
 						
-						let fileName = this.plugin.settings.fileName.replace("{{Title}}", title)
-						this.addToNewNote(podcast_string, fileName)
+						let fileName = this.plugin.settings.fileName.replace("{{Title}}", title).replace("{{Date}}", Date.now().toString())
+						this.addToNewNote(podcastString, fileName)
 				
 					} else {
-						this.addAtCursor(podcast_string)
+						this.addAtCursor(podcastString)
 					}
 
 				}catch{
@@ -107,19 +103,27 @@ class PodcastNoteModal extends Modal {
 
 	getHttpsResponse(url: string){
 
-		let host = "open.spotify.com"
-		let podcast_path = url.split(host)[1]
+		let spotifyHost = "open.spotify.com"
+		let appleHost = "podcasts.apple.com"
 
-		if (this.plugin.settings.podcastService == "apple"){
-			host = "podcasts.apple.com"
-			podcast_path = url.split(host)[1]
+		let host = ""
+		let podcastPath = ""
+
+		if (url.includes(spotifyHost)){
+			host = spotifyHost
+			podcastPath = url.split(host)[1]
+		} else if (url.includes(appleHost)){
+			host = appleHost
+			podcastPath = url.split(host)[1]
+		} else{
+			
 		}
 
 		const https = require('https')
 		const options = {
 			hostname: host,
 			port: 443,
-			path: podcast_path,
+			path: podcastPath,
 			method: 'GET',
 			headers: { 'User-Agent': 'Mozilla/5.0' }
 		}
@@ -141,26 +145,26 @@ class PodcastNoteModal extends Modal {
 		return root;
 	}
 
-	getMetaDataForPodcast(root){
+	getMetaDataForPodcast(root, url){
 		let title = ""
 		let desc = ""
-		let image_link = ""
+		let imageLink = ""
 
 		title = root.querySelector("meta[property='og:title']").getAttribute('content')
-
-		if (this.plugin.settings.showDesc){
-			desc = root.querySelector("meta[property='og:description']").getAttribute('content')
-		}
-		if (this.plugin.settings.showImage){
-			image_link = root.querySelector("meta[property='og:image']").getAttribute('content')
-			image_link = "![](" + image_link +  ")"
-		}
+		desc = root.querySelector("meta[property='og:description']").getAttribute('content')
+		imageLink = root.querySelector("meta[property='og:image']").getAttribute('content')
+		imageLink = "![](" + imageLink +  ")"
+		let d = new Date()
+		let dateString = ("0" + d.getDate()).slice(-2) + "-" + ("0"+(d.getMonth()+1)).slice(-2) + "-" + d.getFullYear() + " " + ("0" + d.getHours()).slice(-2) + ":" + ("0" + d.getMinutes()).slice(-2);
+		let podcastLink = "[-> Podcast](" + url + ")"
 
 		let podcastTemplate = this.plugin.settings.podcastTemplate
 		podcastTemplate = podcastTemplate
 							.replace("{{Title}}", title)
-							.replace("{{Image}}", image_link)
+							.replace("{{Image}}", imageLink)
 							.replace("{{Description}}", desc)
+							.replace("{{Date}}", dateString)
+							.replace("{{Link}}", podcastLink)
 
 		return [podcastTemplate, title]
 	}
@@ -198,23 +202,11 @@ class PodcastNoteSettingTab extends PluginSettingTab {
 		containerEl.empty();
 		containerEl.createEl('h2', {text: 'Settings for Podcast Note'});
 
-		new Setting(containerEl)
-			.setName('Choose podcast service')
-			.setDesc('Choose the podcast service you are using.')
-			.addDropdown(dropdown => dropdown
-				.addOptions({"apple": "Apple Podcast", 
-							"spotify": "Spotify Podcast"})
-				.setValue(this.plugin.settings.podcastService)
-				.onChange(async () => {
-					console.log(dropdown.getValue())
-					this.plugin.settings.podcastService = dropdown.getValue();
-					await this.plugin.saveSettings();
-				})
-			)
+
 
 		new Setting(containerEl)
 				.setName('Template')
-				.setDesc("you can define your own template. Available placeholders are {{Title}}, {{Image}}, {{Description}}.")
+				.setDesc("you can define your own template. Available placeholders are: {{Title}}, {{Image}}, {{Description}}, {{Link}}, {{Date}}")
 				.addTextArea(textarea => textarea
 					.setValue(this.plugin.settings.podcastTemplate)
 					.onChange(async () => {
@@ -244,32 +236,5 @@ class PodcastNoteSettingTab extends PluginSettingTab {
 						await this.plugin.saveSettings()
 					})
 				)
-
-		
-				
-		
-		new Setting(containerEl)
-			.setName('Add image')
-			.setDesc('Will display podcast image when on.')
-			.addToggle(toggle => toggle
-				.setValue(this.plugin.settings.showImage)
-				.onChange(async () => {
-					console.log(toggle.getValue());
-					this.plugin.settings.showImage = toggle.getValue();
-					await this.plugin.saveSettings();
-				})
-			)
-
-		new Setting(containerEl)
-			.setName('Add description')
-			.setDesc('Will display podcast description when on.')
-			.addToggle(toggle => toggle
-				.setValue(this.plugin.settings.showDesc)
-				.onChange(async () => {
-					console.log(toggle.getValue());
-					this.plugin.settings.showDesc = toggle.getValue();
-					await this.plugin.saveSettings();
-				})
-			)
 	}
 }
