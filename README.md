@@ -15,6 +15,9 @@ So far these podcast services are supported:
 ## Demo
 https://user-images.githubusercontent.com/67844154/131218349-03de1a72-084d-40bc-9cbb-947b0def3a3f.mp4
 
+![Podcast Note example](https://user-images.githubusercontent.com/67844154/131222181-e9a52afa-fee2-4eff-83e1-f03deb633df3.png)
+
+
 ## Settings
 
 
