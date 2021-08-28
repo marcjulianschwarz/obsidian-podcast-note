@@ -18,9 +18,6 @@ https://user-images.githubusercontent.com/67844154/131218349-03de1a72-084d-40bc-
 ## Settings
 
 
-![Obsidian Podcast Note Plugin Settings](https://user-images.githubusercontent.com/67844154/131218391-eedc24c7-41fc-4947-837c-21cd6e451757.png)
-
-
 ### 1. Template
 Here you can specify how the metadata for your podcast notes looks like. 
 Use these three placeholders:
@@ -42,6 +39,10 @@ Set the folder where new Podcast notes will be saved.
 
 
 ### 4. Insert podcast note at cursor
+
+
+![Obsidian Podcast Note Plugin Settings](https://user-images.githubusercontent.com/67844154/131218391-eedc24c7-41fc-4947-837c-21cd6e451757.png)
+
 
 
 
