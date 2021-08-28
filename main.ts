@@ -11,7 +11,7 @@ interface PodcastNoteSettings {
 
 const DEFAULT_SETTINGS: PodcastNoteSettings = {
 	podcastTemplate: "---\ntags: [Podcast]\ndate: {{Date}}\n---\n# {{Title}}\n![]({{ImageURL}})\n## Description:\n{{Description}}\n-> [Podcast Link]({{PodcastURL}})\n## Notes:\n",
-	atCursor: true,
+	atCursor: false,
 	fileName: "",
 	podcastService: "apple",
 	folder: ""
