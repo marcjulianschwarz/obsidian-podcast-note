@@ -1,14 +1,15 @@
 # Podcast Note
 
-This plugin allows you to easily take notes on podcast in Obsidian
+This plugin allows you to quickly add podcast metadata to your notes.
 
 
 ## How to use it
-You can add a new podcast note by opening the comman pallete (cmd + p) and selecting "Add Podcast Note".
+You can add a new podcast note by opening the command pallete (cmd + p) and selecting "Add Podcast Note".
 A prompt will open where you can enter the URL for the podcast you want to take notes on. 
-
-
 Of course you can also specify a keyboard shortcut to trigger the prompt.
+So far these podcast services are supported:
+- Apple Podcast
+- Spotify Podcast
 
 
 ## Demo
