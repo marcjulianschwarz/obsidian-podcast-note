@@ -1,19 +1,20 @@
-import { notStrictEqual } from 'assert';
-import { App, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting } from 'obsidian';
-import { getTextOfJSDocComment } from 'typescript';
+import { App, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting, TextAreaComponent } from 'obsidian';
+import { forEachLeadingCommentRange } from 'typescript';
 
 interface PodcastNoteSettings {
 	podcastTemplate: string,
-	newNote: boolean,
+	atCursor: boolean,
 	fileName: string,
-	podcastService: string
+	podcastService: string,
+	folder: string
 }
 
 const DEFAULT_SETTINGS: PodcastNoteSettings = {
-	podcastTemplate: "# {{Title}} \n {{Image}} \n ## Description: \n {{Description}} \n ## Notes: \n",
-	newNote: false,
+	podcastTemplate: "---\ntags: [Podcast]\ndate: {{Date}}\n---\n# {{Title}}\n![]({{ImageURL}})\n## Description:\n{{Description}}\n-> [Podcast Link]({{PodcastURL}})\n## Notes:\n",
+	atCursor: true,
 	fileName: "",
-	podcastService: "apple"
+	podcastService: "apple",
+	folder: ""
 }
 
 export default class PodcastNote extends Plugin {
@@ -70,7 +71,7 @@ class PodcastNoteModal extends Modal {
 	onOpen() {
 
 		let {contentEl} = this;
-		let html = '<h3 style="margin-top: 0px;">Enter URL:</p><input type="text"/> <br><br><button>Add Podcast Note</button>';
+		let html = '<h3 style="margin-top: 0px;">Enter podcast URL:</p><input type="text"/> <br><br><button>Add Podcast Note</button>';
 		contentEl.innerHTML = html;
 
 		contentEl.querySelector("button").addEventListener("click", () => {
@@ -109,11 +110,11 @@ class PodcastNoteModal extends Modal {
 							let title = podcastInfo[1]
 							let podcastString = podcastInfo[0]
 
-							if (this.plugin.settings.newNote){		
+							if (this.plugin.settings.atCursor){		
+								this.addAtCursor(podcastString)
+							} else {
 								let fileName = this.plugin.settings.fileName.replace("{{Title}}", title).replace("{{Date}}", Date.now().toString())
 								this.addToNewNote(podcastString, fileName)
-							} else {
-								this.addAtCursor(podcastString)
 							}
 						}catch{
 							new Notice("The URL is invalid.")
@@ -154,22 +155,19 @@ class PodcastNoteModal extends Modal {
 		
 		let d = new Date()
 		let dateString = ("0" + d.getDate()).slice(-2) + "-" + ("0"+(d.getMonth()+1)).slice(-2) + "-" + d.getFullYear() + " " + ("0" + d.getHours()).slice(-2) + ":" + ("0" + d.getMinutes()).slice(-2);
-		let podcastLink = "[-> Podcast](" + url + ")"
 
 		if (this.plugin.settings.podcastService == "spotify"){
 			let title = root.querySelector("meta[property='og:title']").getAttribute('content')
 			let desc = root.querySelector("meta[property='og:description']").getAttribute('content')
 			let imageLink = root.querySelector("meta[property='og:image']").getAttribute('content')
-			imageLink = "![](" + imageLink +  ")"
-			let podcastTemplate = this.applyTemplate(title, imageLink, desc, dateString, podcastLink)
+			let podcastTemplate = this.applyTemplate(title, imageLink, desc, dateString, url)
 			return [podcastTemplate, title]
 		} else {
 			let title = root.querySelector("meta[property='og:title']").getAttribute('content')
 			let desc = root.querySelector(".product-hero-desc__section").querySelector("p").innerHTML
 			let artwork = root.querySelector(".we-artwork__source")
 			let imageLink = artwork.getAttribute('srcset').split(" ")[0]
-			imageLink = "![](" + imageLink + ")"
-			let podcastTemplate = this.applyTemplate(title, imageLink, desc, dateString, podcastLink)
+			let podcastTemplate = this.applyTemplate(title, imageLink, desc, dateString, url)
 			return [podcastTemplate, title]
 		}
 	}
@@ -178,10 +176,10 @@ class PodcastNoteModal extends Modal {
 		let podcastTemplate = this.plugin.settings.podcastTemplate
 		podcastTemplate = podcastTemplate
 							.replace("{{Title}}", title)
-							.replace("{{Image}}", imageLink)
+							.replace("{{ImageURL}}", imageLink)
 							.replace("{{Description}}", desc)
 							.replace("{{Date}}", dateString)
-							.replace("{{Link}}", podcastLink)
+							.replace("{{PodcastURL}}", podcastLink)
 		return podcastTemplate
 	}
 
@@ -195,8 +193,7 @@ class PodcastNoteModal extends Modal {
 
 	addToNewNote(s: string, fileName: string){
 		fileName = fileName.replace("/", "").replace("\\", "").replace(":", "").replace(":", "")
-		this.app.vault
-		this.app.vault.create(fileName + ".md", s);
+		this.app.vault.create(this.plugin.settings.folder + fileName + ".md", s);
 	}
 
 	onClose() {
@@ -233,23 +230,31 @@ class PodcastNoteSettingTab extends PluginSettingTab {
 
 		new Setting(containerEl)
 				.setName('Template')
-				.setDesc("you can define your own template. Available placeholders are: {{Title}}, {{Image}}, {{Description}}, {{Link}}, {{Date}}")
-				.addTextArea(textarea => textarea
+				.setDesc("you can define your own template. Available placeholders are: {{Title}}, {{ImageURL}}, {{Description}}, {{PodcastURL}}, {{Date}}")
+				.addTextArea((textarea) => {
+					textarea
 					.setValue(this.plugin.settings.podcastTemplate)
 					.onChange(async () => {
 						this.plugin.settings.podcastTemplate = textarea.getValue();
 						await this.plugin.saveSettings();
-					})
+					});
+					textarea.inputEl.rows = 10;
+					textarea.inputEl.cols = 35;
+				}
+					
 				)
 
+
+
 		new Setting(containerEl)
-				.setName('New note')
-				.setDesc('Create new note (default: insert at cursor)')
-				.addToggle(toggle => toggle
-					.setValue(this.plugin.settings.newNote)
+				.setName('Folder')
+				.setDesc('New Podcast Notes will be saved here (default: Vault folder)')
+				.addTextArea(textarea => textarea
+					.setValue(this.plugin.settings.folder)
+					.setPlaceholder("Podcast Folder/")
 					.onChange(async () => {
-						this.plugin.settings.newNote = toggle.getValue();
-						await this.plugin.saveSettings();
+						this.plugin.settings.folder = textarea.getValue();
+						await this.plugin.saveSettings()
 					})
 				)
 
@@ -261,6 +266,17 @@ class PodcastNoteSettingTab extends PluginSettingTab {
 					.onChange(async () => {
 						this.plugin.settings.fileName = textarea.getValue()
 						await this.plugin.saveSettings()
+					})
+				)
+
+		new Setting(containerEl)
+				.setName('Insert at cursor')
+				.setDesc('Insert podcast note at cursor (default: create new note)')
+				.addToggle(toggle => toggle
+					.setValue(this.plugin.settings.atCursor)
+					.onChange(async () => {
+						this.plugin.settings.atCursor = toggle.getValue();
+						await this.plugin.saveSettings();
 					})
 				)
 	}
