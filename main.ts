@@ -76,57 +76,57 @@ class PodcastNoteModal extends Modal {
 
 		contentEl.querySelector("button").addEventListener("click", () => {
 
-			let url = contentEl.querySelector("input").value
+			let url = contentEl.querySelector("input").value;
 			
-			let spotifyHost = "open.spotify.com"
-			let appleHost = "podcasts.apple.com"
+			let spotifyHost = "open.spotify.com";
+			let appleHost = "podcasts.apple.com";
 	
-			let host = ""
-			let podcastPath = ""
+			let host = "";
+			let podcastPath = "";
 
 			if (url.includes(spotifyHost)){
-				this.plugin.settings.podcastService = "spotify"
-				host = spotifyHost
-				podcastPath = url.split(host)[1]
+				this.plugin.settings.podcastService = "spotify";
+				host = spotifyHost;
+				podcastPath = url.split(host)[1];
 			} else if (url.includes(appleHost)){
-				this.plugin.settings.podcastService = "apple"
-				host = appleHost
-				podcastPath = url.split(host)[1]
+				this.plugin.settings.podcastService = "apple";
+				host = appleHost;
+				podcastPath = url.split(host)[1];
 			} else{
 				new Notice("This is not a valid podcast Service.");
-				this.close()
-				return
+				this.close();
+				return;
 			}
 			
 			let response = this.getHttpsResponse(host, podcastPath);
 
-			new Notice("Loading Podcast Info")
+			new Notice("Loading Podcast Info");
 			response.then((result) => {
 
 						try {
 							let root = this.getParsedHtml(result);
 							
-							let podcastInfo = this.getMetaDataForPodcast(root, url)
-							let title = podcastInfo[1]
-							let podcastString = podcastInfo[0]
+							let podcastInfo = this.getMetaDataForPodcast(root, url);
+							let title = podcastInfo[1];
+							let podcastString = podcastInfo[0];
 
 							if (this.plugin.settings.atCursor){		
-								this.addAtCursor(podcastString)
+								this.addAtCursor(podcastString);
 							} else {
-								let fileName = this.plugin.settings.fileName.replace("{{Title}}", title).replace("{{Date}}", Date.now().toString())
-								this.addToNewNote(podcastString, fileName)
+								let fileName = this.plugin.settings.fileName.replace("{{Title}}", title).replace("{{Date}}", Date.now().toString());
+								this.addToNewNote(podcastString, fileName);
 							}
 						}catch{
-							new Notice("The URL is invalid.")
+							new Notice("The URL is invalid.");
 						}
 			})
 			
-            this.close()
+            this.close();
 		});
 	}
 
 	getHttpsResponse(host: string, podcastPath: string){
-		const https = require('https')
+		const https = require('https');
 		const options = {
 			hostname: host,
 			port: 443,
@@ -146,41 +146,41 @@ class PodcastNoteModal extends Modal {
 	}
 
 	getParsedHtml(s){
-		let parser = new DOMParser()
-		let root = parser.parseFromString(s, "text/html")
+		let parser = new DOMParser();
+		let root = parser.parseFromString(s, "text/html");
 		return root;
 	}
 
 	getMetaDataForPodcast(root, url){
 		
-		let d = new Date()
+		let d = new Date();
 		let dateString = ("0" + d.getDate()).slice(-2) + "-" + ("0"+(d.getMonth()+1)).slice(-2) + "-" + d.getFullYear() + " " + ("0" + d.getHours()).slice(-2) + ":" + ("0" + d.getMinutes()).slice(-2);
 
 		if (this.plugin.settings.podcastService == "spotify"){
-			let title = root.querySelector("meta[property='og:title']").getAttribute('content')
-			let desc = root.querySelector("meta[property='og:description']").getAttribute('content')
-			let imageLink = root.querySelector("meta[property='og:image']").getAttribute('content')
-			let podcastTemplate = this.applyTemplate(title, imageLink, desc, dateString, url)
-			return [podcastTemplate, title]
+			let title = root.querySelector("meta[property='og:title']").getAttribute('content');
+			let desc = root.querySelector("meta[property='og:description']").getAttribute('content');
+			let imageLink = root.querySelector("meta[property='og:image']").getAttribute('content');
+			let podcastTemplate = this.applyTemplate(title, imageLink, desc, dateString, url);
+			return [podcastTemplate, title];
 		} else {
-			let title = root.querySelector("meta[property='og:title']").getAttribute('content')
-			let desc = root.querySelector(".product-hero-desc__section").querySelector("p").innerHTML
-			let artwork = root.querySelector(".we-artwork__source")
-			let imageLink = artwork.getAttribute('srcset').split(" ")[0]
-			let podcastTemplate = this.applyTemplate(title, imageLink, desc, dateString, url)
-			return [podcastTemplate, title]
+			let title = root.querySelector("meta[property='og:title']").getAttribute('content');
+			let desc = root.querySelector(".product-hero-desc__section").querySelector("p").innerHTML;
+			let artwork = root.querySelector(".we-artwork__source");
+			let imageLink = artwork.getAttribute('srcset').split(" ")[0];
+			let podcastTemplate = this.applyTemplate(title, imageLink, desc, dateString, url);
+			return [podcastTemplate, title];
 		}
 	}
 
 	applyTemplate(title, imageLink, desc, dateString, podcastLink){
-		let podcastTemplate = this.plugin.settings.podcastTemplate
+		let podcastTemplate = this.plugin.settings.podcastTemplate;
 		podcastTemplate = podcastTemplate
 							.replace("{{Title}}", title)
 							.replace("{{ImageURL}}", imageLink)
 							.replace("{{Description}}", desc)
 							.replace("{{Date}}", dateString)
-							.replace("{{PodcastURL}}", podcastLink)
-		return podcastTemplate
+							.replace("{{PodcastURL}}", podcastLink);
+		return podcastTemplate;
 	}
 
 
@@ -192,7 +192,7 @@ class PodcastNoteModal extends Modal {
 	}
 
 	addToNewNote(s: string, fileName: string){
-		fileName = fileName.replace("/", "").replace("\\", "").replace(":", "").replace(":", "")
+		fileName = fileName.replace("/", "").replace("\\", "").replace(":", "").replace(":", "");
 		this.app.vault.create(this.plugin.settings.folder + fileName + ".md", s);
 	}
 
@@ -213,7 +213,7 @@ class PodcastNoteSettingTab extends PluginSettingTab {
 	display(): void {
 		let {containerEl} = this;
 		containerEl.empty();
-		containerEl.createEl('h2', {text: 'Settings for Podcast Note'});
+		//containerEl.createEl('h2', {text: 'Settings for Podcast Note'});
 
 		new Setting(containerEl)
 				.setName('Podcast Service')
@@ -225,26 +225,23 @@ class PodcastNoteSettingTab extends PluginSettingTab {
 						this.plugin.settings.podcastService = dropdown.getValue()
 						await this.plugin.saveSettings()
 					})
-				)
+				);
 
 
 		new Setting(containerEl)
 				.setName('Template')
 				.setDesc("you can define your own template. Available placeholders are: {{Title}}, {{ImageURL}}, {{Description}}, {{PodcastURL}}, {{Date}}")
 				.addTextArea((textarea) => {
-					textarea
-					.setValue(this.plugin.settings.podcastTemplate)
-					.onChange(async () => {
-						this.plugin.settings.podcastTemplate = textarea.getValue();
-						await this.plugin.saveSettings();
-					});
-					textarea.inputEl.rows = 10;
-					textarea.inputEl.cols = 35;
-				}
-					
-				)
-
-
+						textarea
+						.setValue(this.plugin.settings.podcastTemplate)
+						.onChange(async () => {
+							this.plugin.settings.podcastTemplate = textarea.getValue();
+							await this.plugin.saveSettings();
+						});
+						textarea.inputEl.rows = 10;
+						textarea.inputEl.cols = 35;
+					}	
+				);
 
 		new Setting(containerEl)
 				.setName('Folder')
@@ -256,7 +253,7 @@ class PodcastNoteSettingTab extends PluginSettingTab {
 						this.plugin.settings.folder = textarea.getValue();
 						await this.plugin.saveSettings()
 					})
-				)
+				);
 
 		new Setting(containerEl)
 				.setName('Filename template')
@@ -267,7 +264,7 @@ class PodcastNoteSettingTab extends PluginSettingTab {
 						this.plugin.settings.fileName = textarea.getValue()
 						await this.plugin.saveSettings()
 					})
-				)
+				);
 
 		new Setting(containerEl)
 				.setName('Insert at cursor')
@@ -278,6 +275,6 @@ class PodcastNoteSettingTab extends PluginSettingTab {
 						this.plugin.settings.atCursor = toggle.getValue();
 						await this.plugin.saveSettings();
 					})
-				)
+				);
 	}
 }
