@@ -1,5 +1,7 @@
 # Podcast Note
 
+work in progress..
+
 This plugin allows you to quickly add podcast metadata to your notes.
 
 
@@ -43,16 +45,12 @@ Set the folder where new Podcast notes will be saved.
 
 ### 4. Insert podcast note at cursor
 
+Specify whether you want to create a new note or whether you want the meta data to be inserted at your cursor.
 
+### Settings image
 ![Obsidian Podcast Note Plugin Settings](https://user-images.githubusercontent.com/67844154/131218391-eedc24c7-41fc-4947-837c-21cd6e451757.png)
-
-
 
 
 ## Questions
 If you have any questions, let me know and write a mail at [marc-julian.de](https://www.marc-julian.de)
-
-
-
-
 
