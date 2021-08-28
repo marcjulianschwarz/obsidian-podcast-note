@@ -70,62 +70,62 @@ class PodcastNoteModal extends Modal {
 
 	onOpen() {
 
-		let {contentEl} = this;
+		let { contentEl } = this;
 		let html = '<h3 style="margin-top: 0px;">Enter podcast URL:</p><input type="text"/> <br><br><button>Add Podcast Note</button>';
 		contentEl.innerHTML = html;
 
 		contentEl.querySelector("button").addEventListener("click", () => {
 
 			let url = contentEl.querySelector("input").value;
-			
+
 			let spotifyHost = "open.spotify.com";
 			let appleHost = "podcasts.apple.com";
-	
+
 			let host = "";
 			let podcastPath = "";
 
-			if (url.includes(spotifyHost)){
+			if (url.includes(spotifyHost)) {
 				this.plugin.settings.podcastService = "spotify";
 				host = spotifyHost;
 				podcastPath = url.split(host)[1];
-			} else if (url.includes(appleHost)){
+			} else if (url.includes(appleHost)) {
 				this.plugin.settings.podcastService = "apple";
 				host = appleHost;
 				podcastPath = url.split(host)[1];
-			} else{
+			} else {
 				new Notice("This is not a valid podcast Service.");
 				this.close();
 				return;
 			}
-			
+
 			let response = this.getHttpsResponse(host, podcastPath);
 
 			new Notice("Loading Podcast Info");
 			response.then((result) => {
 
-						try {
-							let root = this.getParsedHtml(result);
-							
-							let podcastInfo = this.getMetaDataForPodcast(root, url);
-							let title = podcastInfo[1];
-							let podcastString = podcastInfo[0];
+				try {
+					let root = this.getParsedHtml(result);
 
-							if (this.plugin.settings.atCursor){		
-								this.addAtCursor(podcastString);
-							} else {
-								let fileName = this.plugin.settings.fileName.replace("{{Title}}", title).replace("{{Date}}", Date.now().toString());
-								this.addToNewNote(podcastString, fileName);
-							}
-						}catch{
-							new Notice("The URL is invalid.");
-						}
+					let podcastInfo = this.getMetaDataForPodcast(root, url);
+					let title = podcastInfo[1];
+					let podcastString = podcastInfo[0];
+
+					if (this.plugin.settings.atCursor) {
+						this.addAtCursor(podcastString);
+					} else {
+						let fileName = this.plugin.settings.fileName.replace("{{Title}}", title).replace("{{Date}}", Date.now().toString());
+						this.addToNewNote(podcastString, fileName);
+					}
+				} catch {
+					new Notice("The URL is invalid.");
+				}
 			})
-			
-            this.close();
+
+			this.close();
 		});
 	}
 
-	getHttpsResponse(host: string, podcastPath: string){
+	getHttpsResponse(host: string, podcastPath: string) {
 		const https = require('https');
 		const options = {
 			hostname: host,
@@ -138,25 +138,25 @@ class PodcastNoteModal extends Modal {
 		return new Promise((resolve, reject) => {
 			https.request(options, res => {
 				res.setEncoding('utf8');
-				let body = ''; 
+				let body = '';
 				res.on('data', chunk => body += chunk);
 				res.on('end', () => resolve(body));
 			}).on('error', reject).end();
 		});
 	}
 
-	getParsedHtml(s){
+	getParsedHtml(s) {
 		let parser = new DOMParser();
 		let root = parser.parseFromString(s, "text/html");
 		return root;
 	}
 
-	getMetaDataForPodcast(root, url){
-		
-		let d = new Date();
-		let dateString = ("0" + d.getDate()).slice(-2) + "-" + ("0"+(d.getMonth()+1)).slice(-2) + "-" + d.getFullYear() + " " + ("0" + d.getHours()).slice(-2) + ":" + ("0" + d.getMinutes()).slice(-2);
+	getMetaDataForPodcast(root, url) {
 
-		if (this.plugin.settings.podcastService == "spotify"){
+		let d = new Date();
+		let dateString = ("0" + d.getDate()).slice(-2) + "-" + ("0" + (d.getMonth() + 1)).slice(-2) + "-" + d.getFullYear() + " " + ("0" + d.getHours()).slice(-2) + ":" + ("0" + d.getMinutes()).slice(-2);
+
+		if (this.plugin.settings.podcastService == "spotify") {
 			let title = root.querySelector("meta[property='og:title']").getAttribute('content');
 			let desc = root.querySelector("meta[property='og:description']").getAttribute('content');
 			let imageLink = root.querySelector("meta[property='og:image']").getAttribute('content');
@@ -172,32 +172,32 @@ class PodcastNoteModal extends Modal {
 		}
 	}
 
-	applyTemplate(title, imageLink, desc, dateString, podcastLink){
+	applyTemplate(title, imageLink, desc, dateString, podcastLink) {
 		let podcastTemplate = this.plugin.settings.podcastTemplate;
 		podcastTemplate = podcastTemplate
-							.replace("{{Title}}", title)
-							.replace("{{ImageURL}}", imageLink)
-							.replace("{{Description}}", desc)
-							.replace("{{Date}}", dateString)
-							.replace("{{PodcastURL}}", podcastLink);
+			.replace("{{Title}}", title)
+			.replace("{{ImageURL}}", imageLink)
+			.replace("{{Description}}", desc)
+			.replace("{{Date}}", dateString)
+			.replace("{{PodcastURL}}", podcastLink);
 		return podcastTemplate;
 	}
 
 
-	addAtCursor(s: string){
+	addAtCursor(s: string) {
 		let mdView = this.app.workspace.getActiveViewOfType(MarkdownView);
-        let doc = mdView.editor;
+		let doc = mdView.editor;
 		var currentLine = doc.getCursor();
-        doc.replaceRange(s, currentLine, currentLine);
+		doc.replaceRange(s, currentLine, currentLine);
 	}
 
-	addToNewNote(s: string, fileName: string){
+	addToNewNote(s: string, fileName: string) {
 		fileName = fileName.replace("/", "").replace("\\", "").replace(":", "").replace(":", "");
 		this.app.vault.create(this.plugin.settings.folder + fileName + ".md", s);
 	}
 
 	onClose() {
-		let {contentEl} = this;
+		let { contentEl } = this;
 		contentEl.empty();
 	}
 }
@@ -211,70 +211,70 @@ class PodcastNoteSettingTab extends PluginSettingTab {
 	}
 
 	display(): void {
-		let {containerEl} = this;
+		let { containerEl } = this;
 		containerEl.empty();
 		//containerEl.createEl('h2', {text: 'Settings for Podcast Note'});
 
 		new Setting(containerEl)
-				.setName('Podcast Service')
-				.setDesc('Select your podcast service.')
-				.addDropdown(dropdown => dropdown
-					.addOptions({"apple": "Apple Podcast", "spotify": "Spotify Podcast"})
-					.setValue(this.plugin.settings.podcastService)
-					.onChange(async () => {
-						this.plugin.settings.podcastService = dropdown.getValue()
-						await this.plugin.saveSettings()
-					})
-				);
+			.setName('Podcast Service')
+			.setDesc('Select your podcast service.')
+			.addDropdown(dropdown => dropdown
+				.addOptions({ "apple": "Apple Podcast", "spotify": "Spotify Podcast" })
+				.setValue(this.plugin.settings.podcastService)
+				.onChange(async () => {
+					this.plugin.settings.podcastService = dropdown.getValue()
+					await this.plugin.saveSettings()
+				})
+			);
 
 
 		new Setting(containerEl)
-				.setName('Template')
-				.setDesc("you can define your own template. Available placeholders are: {{Title}}, {{ImageURL}}, {{Description}}, {{PodcastURL}}, {{Date}}")
-				.addTextArea((textarea) => {
-						textarea
-						.setValue(this.plugin.settings.podcastTemplate)
-						.onChange(async () => {
-							this.plugin.settings.podcastTemplate = textarea.getValue();
-							await this.plugin.saveSettings();
-						});
-						textarea.inputEl.rows = 10;
-						textarea.inputEl.cols = 35;
-					}	
-				);
-
-		new Setting(containerEl)
-				.setName('Folder')
-				.setDesc('New Podcast Notes will be saved here (default: Vault folder)')
-				.addTextArea(textarea => textarea
-					.setValue(this.plugin.settings.folder)
-					.setPlaceholder("Podcast Folder/")
+			.setName('Template')
+			.setDesc("you can define your own template. Available placeholders are: {{Title}}, {{ImageURL}}, {{Description}}, {{PodcastURL}}, {{Date}}")
+			.addTextArea((textarea) => {
+				textarea
+					.setValue(this.plugin.settings.podcastTemplate)
 					.onChange(async () => {
-						this.plugin.settings.folder = textarea.getValue();
-						await this.plugin.saveSettings()
-					})
-				);
-
-		new Setting(containerEl)
-				.setName('Filename template')
-				.setDesc('Filename template when "New note" is selected. Available placeholders are {{Title}}, {{Date}}')
-				.addTextArea(textarea => textarea
-					.setValue(this.plugin.settings.fileName)
-					.onChange(async () => {
-						this.plugin.settings.fileName = textarea.getValue()
-						await this.plugin.saveSettings()
-					})
-				);
-
-		new Setting(containerEl)
-				.setName('Insert at cursor')
-				.setDesc('Insert podcast note at cursor (default: create new note)')
-				.addToggle(toggle => toggle
-					.setValue(this.plugin.settings.atCursor)
-					.onChange(async () => {
-						this.plugin.settings.atCursor = toggle.getValue();
+						this.plugin.settings.podcastTemplate = textarea.getValue();
 						await this.plugin.saveSettings();
-					})
-				);
+					});
+				textarea.inputEl.rows = 10;
+				textarea.inputEl.cols = 35;
+			}
+			);
+
+		new Setting(containerEl)
+			.setName('Folder')
+			.setDesc('New Podcast Notes will be saved here (default: Vault folder)')
+			.addTextArea(textarea => textarea
+				.setValue(this.plugin.settings.folder)
+				.setPlaceholder("Podcast Folder/")
+				.onChange(async () => {
+					this.plugin.settings.folder = textarea.getValue();
+					await this.plugin.saveSettings()
+				})
+			);
+
+		new Setting(containerEl)
+			.setName('Filename template')
+			.setDesc('Filename template when "New note" is selected. Available placeholders are {{Title}}, {{Date}}')
+			.addTextArea(textarea => textarea
+				.setValue(this.plugin.settings.fileName)
+				.onChange(async () => {
+					this.plugin.settings.fileName = textarea.getValue()
+					await this.plugin.saveSettings()
+				})
+			);
+
+		new Setting(containerEl)
+			.setName('Insert at cursor')
+			.setDesc('Insert podcast note at cursor (default: create new note)')
+			.addToggle(toggle => toggle
+				.setValue(this.plugin.settings.atCursor)
+				.onChange(async () => {
+					this.plugin.settings.atCursor = toggle.getValue();
+					await this.plugin.saveSettings();
+				})
+			);
 	}
 }
