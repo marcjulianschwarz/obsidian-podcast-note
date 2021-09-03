@@ -12,7 +12,12 @@ Of course you can also specify a keyboard shortcut to trigger the prompt.
 So far these podcast services are supported:
 - Apple Podcast
 - Spotify Podcast
-
+- Google Podcast
+- Pocket Casts
+- Airr
+- Overcast
+- Castro
+- Castbox
 
 ## Demo
 https://user-images.githubusercontent.com/67844154/131218349-03de1a72-084d-40bc-9cbb-947b0def3a3f.mp4
