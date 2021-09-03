@@ -1,5 +1,4 @@
 import { App, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting, TextAreaComponent } from 'obsidian';
-import { forEachLeadingCommentRange } from 'typescript';
 
 interface PodcastNoteSettings {
 	podcastTemplate: string,
@@ -80,6 +79,9 @@ class PodcastNoteModal extends Modal {
 
 			let spotifyHost = "open.spotify.com";
 			let appleHost = "podcasts.apple.com";
+			let pocketcastsHost = "pca.st";
+			let airrHost = "www.airr.io";
+			let overcastHost = "overcast.fm";
 
 			let host = "";
 			let podcastPath = "";
@@ -87,23 +89,32 @@ class PodcastNoteModal extends Modal {
 			if (url.includes(spotifyHost)) {
 				this.plugin.settings.podcastService = "spotify";
 				host = spotifyHost;
-				podcastPath = url.split(host)[1];
 			} else if (url.includes(appleHost)) {
 				this.plugin.settings.podcastService = "apple";
 				host = appleHost;
-				podcastPath = url.split(host)[1];
+			} else if (url.includes(pocketcastsHost)){
+				this.plugin.settings.podcastService = "pocketcasts";
+				host = pocketcastsHost;
+			} else if (url.includes(airrHost)){
+				this.plugin.settings.podcastService = "airr";
+				host = airrHost;
+			} else if (url.includes(overcastHost)) {
+				this.plugin.settings.podcastService = "overcast";
+				host = overcastHost;
 			} else {
 				new Notice("This is not a valid podcast Service.");
 				this.close();
 				return;
 			}
 
+			podcastPath = url.split(host)[1];
+
 			let response = this.getHttpsResponse(host, podcastPath);
 
 			new Notice("Loading Podcast Info");
 			response.then((result) => {
 
-				try {
+				//try {
 					let root = this.getParsedHtml(result);
 
 					let podcastInfo = this.getMetaDataForPodcast(root, url);
@@ -116,9 +127,9 @@ class PodcastNoteModal extends Modal {
 						let fileName = this.plugin.settings.fileName.replace("{{Title}}", title).replace("{{Date}}", Date.now().toString());
 						this.addToNewNote(podcastString, fileName);
 					}
-				} catch {
-					new Notice("The URL is invalid.");
-				}
+				//} catch {
+				//	new Notice("The URL is invalid.");
+				//}
 			})
 
 			this.close();
@@ -148,6 +159,7 @@ class PodcastNoteModal extends Modal {
 	getParsedHtml(s) {
 		let parser = new DOMParser();
 		let root = parser.parseFromString(s, "text/html");
+		console.log(root)
 		return root;
 	}
 
@@ -155,21 +167,35 @@ class PodcastNoteModal extends Modal {
 
 		let d = new Date();
 		let dateString = ("0" + d.getDate()).slice(-2) + "-" + ("0" + (d.getMonth() + 1)).slice(-2) + "-" + d.getFullYear() + " " + ("0" + d.getHours()).slice(-2) + ":" + ("0" + d.getMinutes()).slice(-2);
+		let title = "New Podcast Note"
+		let desc = ""
+		let imageLink = ""
 
-		if (this.plugin.settings.podcastService == "spotify") {
-			let title = root.querySelector("meta[property='og:title']").getAttribute('content');
-			let desc = root.querySelector("meta[property='og:description']").getAttribute('content');
-			let imageLink = root.querySelector("meta[property='og:image']").getAttribute('content');
-			let podcastTemplate = this.applyTemplate(title, imageLink, desc, dateString, url);
-			return [podcastTemplate, title];
-		} else {
-			let title = root.querySelector("meta[property='og:title']").getAttribute('content');
-			let desc = root.querySelector(".product-hero-desc__section").querySelector("p").innerHTML;
-			let artwork = root.querySelector(".we-artwork__source");
-			let imageLink = artwork.getAttribute('srcset').split(" ")[0];
-			let podcastTemplate = this.applyTemplate(title, imageLink, desc, dateString, url);
-			return [podcastTemplate, title];
+		try {
+			if (this.plugin.settings.podcastService == "apple") {
+				title = root.querySelector("meta[property='og:title']").getAttribute('content');
+				desc = root.querySelector(".product-hero-desc__section").querySelector("p").innerHTML;
+				let artwork = root.querySelector(".we-artwork__source");
+				imageLink = artwork.getAttribute('srcset').split(" ")[0];
+			} else if (this.plugin.settings.podcastService == "airr") {
+				title = root.querySelector("meta[property='og:title']").getAttribute('content');
+				desc = root.querySelector("meta[name='og:description']").getAttribute('content');
+				imageLink = root.querySelector("meta[property='og:image']").getAttribute('content');
+			} else if (this.plugin.settings.podcastService == "overcast") {
+				title = root.querySelector("meta[name='og:title']").getAttribute('content');
+				desc = root.querySelector("meta[name='og:description']").getAttribute('content');
+				imageLink = root.querySelector("meta[name='og:image']").getAttribute('content');
+			} else{
+				title = root.querySelector("meta[property='og:title']").getAttribute('content');
+				desc = root.querySelector("meta[property='og:description']").getAttribute('content');
+				imageLink = root.querySelector("meta[property='og:image']").getAttribute('content');
+			}
+		} catch {
+			console.log("Error parsing webpage.")
 		}
+
+		let podcastTemplate = this.applyTemplate(title, imageLink, desc, dateString, url);
+		return [podcastTemplate, title];
 	}
 
 	applyTemplate(title, imageLink, desc, dateString, podcastLink) {
@@ -219,7 +245,13 @@ class PodcastNoteSettingTab extends PluginSettingTab {
 			.setName('Podcast Service')
 			.setDesc('Select your podcast service.')
 			.addDropdown(dropdown => dropdown
-				.addOptions({ "apple": "Apple Podcast", "spotify": "Spotify Podcast" })
+				.addOptions({ 
+								"apple": "Apple Podcast",
+								"spotify": "Spotify Podcast",
+								"pocketcasts": "Pocket Casts",
+								"airr": "Airr",
+								"overcast": "Overcast"
+							})
 				.setValue(this.plugin.settings.podcastService)
 				.onChange(async () => {
 					this.plugin.settings.podcastService = dropdown.getValue()
