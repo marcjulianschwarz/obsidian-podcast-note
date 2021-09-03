@@ -79,9 +79,13 @@ class PodcastNoteModal extends Modal {
 
 			let spotifyHost = "open.spotify.com";
 			let appleHost = "podcasts.apple.com";
+			let googleHost = "podcasts.google.com";
 			let pocketcastsHost = "pca.st";
 			let airrHost = "www.airr.io";
 			let overcastHost = "overcast.fm";
+			let castboxHost = "castbox.fm";
+			let castroHost = "castro.fm";
+			let listennotesHost = "www.listennotes.com";
 
 			let host = "";
 			let podcastPath = "";
@@ -101,7 +105,19 @@ class PodcastNoteModal extends Modal {
 			} else if (url.includes(overcastHost)) {
 				this.plugin.settings.podcastService = "overcast";
 				host = overcastHost;
-			} else {
+			} else if (url.includes(castboxHost)) {
+				this.plugin.settings.podcastService = "castbox";
+				host = castboxHost;
+			} else if (url.includes(castroHost)) {
+				this.plugin.settings.podcastService = "castro";
+				host = castroHost;
+			} else if (url.includes(googleHost)) {
+				this.plugin.settings.podcastService = "google";
+				host = googleHost;
+			}
+			
+			
+			else {
 				new Notice("This is not a valid podcast Service.");
 				this.close();
 				return;
@@ -164,6 +180,9 @@ class PodcastNoteModal extends Modal {
 	}
 
 	getMetaDataForPodcast(root, url) {
+
+		console.log(root)
+		console.log(url)
 
 		let d = new Date();
 		let dateString = ("0" + d.getDate()).slice(-2) + "-" + ("0" + (d.getMonth() + 1)).slice(-2) + "-" + d.getFullYear() + " " + ("0" + d.getHours()).slice(-2) + ":" + ("0" + d.getMinutes()).slice(-2);
@@ -248,9 +267,12 @@ class PodcastNoteSettingTab extends PluginSettingTab {
 				.addOptions({ 
 								"apple": "Apple Podcast",
 								"spotify": "Spotify Podcast",
+								"google": "Google Podcast",
 								"pocketcasts": "Pocket Casts",
 								"airr": "Airr",
-								"overcast": "Overcast"
+								"overcast": "Overcast",
+								"castbox": "Castbox",
+								"castro": "Castro"
 							})
 				.setValue(this.plugin.settings.podcastService)
 				.onChange(async () => {
