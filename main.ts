@@ -1,4 +1,4 @@
-import { App, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting, TextAreaComponent } from 'obsidian';
+import { App, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting } from 'obsidian';
 
 interface PodcastNoteSettings {
 	podcastTemplate: string,
@@ -53,14 +53,14 @@ export default class PodcastNote extends Plugin {
 			}
 		});
 
-		this.addCommand({
-			id: 'add-podcast-notes-from-list',
-			name: 'Add Podcast Notes from list',
+		// this.addCommand({
+		// 	id: 'add-podcast-notes-from-list',
+		// 	name: 'Add Podcast Notes from list',
 
-			editorCallback: () => {
-				this.addNotesFromList();
-			}
-		});
+		// 	editorCallback: () => {
+		// 		this.addNotesFromList();
+		// 	}
+		// });
 	}
 
 	onunload() {
@@ -75,12 +75,12 @@ export default class PodcastNote extends Plugin {
 		await this.saveData(this.settings);
 	}
 
-	addNotesFromList(){
+	addNotesFromList() {
 
 		// let editor = this.getEditor();
 		// let selection = editor.getSelection();
 		// let words = selection.split(" ")
-		
+
 		// words = words.filter((value) => {
 		// 	return value.includes("https://")
 		// })
@@ -95,36 +95,37 @@ export default class PodcastNote extends Plugin {
 
 	}
 
-	addNoteFromModal(url: string){
-		let {host, podcastPath} = this.getPodcastHostAndPath(url);
+	addNoteFromModal(url: string) {
+		let { host, podcastPath } = this.getPodcastHostAndPath(url);
 		let response = this.getHttpsResponse(host, podcastPath);
 
 		new Notice("Loading Podcast Info");
-		response.then((result) => {
-				let root = this.getParsedHtml(result);
-				let {title, podcastString} = this.getMetaDataForPodcast(root, url);
 
-				if (this.settings.atCursor) {
-					this.addAtCursor(podcastString);
-				} else {
-					let fileName = this.settings.fileName.replace("{{Title}}", title).replace("{{Date}}", Date.now().toString());
-					this.addToNewNote(podcastString, fileName);
-				}
+		response.then((result) => {
+			let root = this.getParsedHtml(result);
+			let { title, podcastString } = this.getMetaDataForPodcast(root, url);
+			this.makePodcastNote(podcastString, title);
+
+		}).catch((reason) => {
+			new Notice("Couldnt load podcast data. No internet connection?");
+			console.log("No connection, reason: \n" + reason);
+		}).finally(() => {
+			this.makePodcastNote("# Notes on podcast\n-> [Podcast Link](" + url + ")\n", "Default");
 		});
 	}
 
-	getPodcastHostAndPath(url: string){
+	getPodcastHostAndPath(url: string) {
 
 		let host = "";
 		let podcastPath = "";
-	
+
 		if (url.includes(hosts.apple)) {
 			host = hosts.apple;
 		} else if (url.includes(hosts.spotify)) {
 			host = hosts.spotify;
-		} else if (url.includes(hosts.google)){
+		} else if (url.includes(hosts.google)) {
 			host = hosts.google;
-		} else if (url.includes(hosts.overcast)){
+		} else if (url.includes(hosts.overcast)) {
 			host = hosts.overcast;
 		} else if (url.includes(hosts.pocketcasts)) {
 			host = hosts.pocketcasts;
@@ -134,15 +135,15 @@ export default class PodcastNote extends Plugin {
 			host = hosts.castro;
 		} else if (url.includes(hosts.airr)) {
 			host = hosts.airr;
-		}else {
+		} else {
 			new Notice("This is not a valid podcast Service.");
 			return;
 		}
-	
+
 		podcastPath = url.split(host)[1];
-		return {"host": host, "podcastPath": podcastPath};
+		return { "host": host, "podcastPath": podcastPath };
 	}
-	
+
 	getHttpsResponse(host: string, podcastPath: string) {
 		const https = require('https');
 		const options = {
@@ -152,7 +153,7 @@ export default class PodcastNote extends Plugin {
 			method: 'GET',
 			headers: { 'User-Agent': 'Mozilla/5.0' }
 		}
-	
+
 		return new Promise((resolve, reject) => {
 			https.request(options, res => {
 				res.setEncoding('utf8');
@@ -162,22 +163,21 @@ export default class PodcastNote extends Plugin {
 			}).on('error', reject).end();
 		});
 	}
-	
+
 	getParsedHtml(s) {
 		let parser = new DOMParser();
 		let root = parser.parseFromString(s, "text/html");
 		return root;
 	}
-	
-	getMetaDataForPodcast(root, url) {
+
+	getMetaDataForPodcast(root: Document, url: string) {
 		let d = new Date();
 		let dateString = ("0" + d.getDate()).slice(-2) + "-" + ("0" + (d.getMonth() + 1)).slice(-2) + "-" + d.getFullYear() + " " + ("0" + d.getHours()).slice(-2) + ":" + ("0" + d.getMinutes()).slice(-2);
-		let title = "Title note found"
+		let title = "Title not found"
 		let desc = "Maybe the URL was invalid or inclompete. Open settings and check if your podcast service is supported."
 		let imageLink = ""
-		console.log(url)
-	
-		//try {
+
+		try {
 			if (url.includes(hosts.apple)) {
 				title = root.querySelector("meta[property='og:title']").getAttribute('content');
 				desc = root.querySelector(".product-hero-desc__section").querySelector("p").innerHTML;
@@ -191,19 +191,19 @@ export default class PodcastNote extends Plugin {
 				title = root.querySelector("meta[name='og:title']").getAttribute('content');
 				desc = root.querySelector("meta[name='og:description']").getAttribute('content');
 				imageLink = root.querySelector("meta[name='og:image']").getAttribute('content');
-			} else{
+			} else {
 				title = root.querySelector("meta[property='og:title']").getAttribute('content');
 				desc = root.querySelector("meta[property='og:description']").getAttribute('content');
 				imageLink = root.querySelector("meta[property='og:image']").getAttribute('content');
 			}
-		//} catch {
-			//console.log("Error parsing webpage.");
-		//}
-	
+		} catch {
+			console.log("Error parsing: " + url);
+		}
+
 		let podcastString = this.applyTemplate(title, imageLink, desc, dateString, url);
-		return {"podcastString": podcastString, "title": title};
+		return { "podcastString": podcastString, "title": title };
 	}
-	
+
 	applyTemplate(title, imageLink, desc, dateString, podcastLink) {
 		let podcastTemplate = this.settings.podcastTemplate;
 		podcastTemplate = podcastTemplate
@@ -214,22 +214,31 @@ export default class PodcastNote extends Plugin {
 			.replace("{{PodcastURL}}", podcastLink);
 		return podcastTemplate;
 	}
-	
-	
+
+
 	addAtCursor(s: string) {
 		let editor = this.getEditor();
 		var currentLine = editor.getCursor();
 		editor.replaceRange(s, currentLine, currentLine);
 	}
 
-	getEditor(){
+	getEditor() {
 		let mdView = this.app.workspace.getActiveViewOfType(MarkdownView);
 		return mdView.editor;
 	}
-	
+
 	addToNewNote(s: string, fileName: string) {
 		fileName = fileName.replace("/", "").replace("\\", "").replace(":", "").replace(":", "");
 		this.app.vault.create(this.settings.folder + fileName + ".md", s);
+	}
+
+	makePodcastNote(podcastString: string, title: string) {
+		if (this.settings.atCursor) {
+			this.addAtCursor(podcastString);
+		} else {
+			let fileName = this.settings.fileName.replace("{{Title}}", title).replace("{{Date}}", Date.now().toString());
+			this.addToNewNote(podcastString, fileName);
+		}
 	}
 
 }
@@ -246,11 +255,11 @@ class PodcastNoteModal extends Modal {
 
 	onOpen() {
 		let { contentEl } = this;
-		contentEl.createEl("h3", {text: "Enter podcast URL:"});
-		let input = contentEl.createEl("input", {type: "text"});
+		contentEl.createEl("h3", { text: "Enter podcast URL:" });
+		let input = contentEl.createEl("input", { type: "text" });
 		contentEl.createEl("br");
 		contentEl.createEl("br");
-		let button = contentEl.createEl("button", {text: "Add Podcast Note"});
+		let button = contentEl.createEl("button", { text: "Add Podcast Note" });
 
 		button.addEventListener("click", () => {
 			let url = input.value;
@@ -276,7 +285,7 @@ class PodcastNoteSettingTab extends PluginSettingTab {
 	display(): void {
 		let { containerEl } = this;
 		containerEl.empty();
-		//containerEl.createEl('h2', {text: 'Settings for Podcast Note'});
+		containerEl.createEl('h2', { text: 'Settings for Podcast Note' });
 
 		// new Setting(containerEl)
 		// 	.setName('Podcast Service')
@@ -348,5 +357,16 @@ class PodcastNoteSettingTab extends PluginSettingTab {
 					await this.plugin.saveSettings();
 				})
 			);
+
+		containerEl.createEl('hr');
+		containerEl.createEl('p', { text: "Supported podcast services:" });
+		let ul = containerEl.createEl('ul');
+		ul.createEl("li", { text: "Apple" });
+		ul.createEl("li", { text: "Spotify" });
+		ul.createEl("li", { text: "Google" });
+		ul.createEl("li", { text: "Pocket Casts" });
+		ul.createEl("li", { text: "Airr" });
+		ul.createEl("li", { text: "Overcast" });
+		ul.createEl("li", { text: "Castro" });
 	}
 }
