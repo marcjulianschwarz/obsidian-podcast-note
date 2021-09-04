@@ -4,7 +4,6 @@ interface PodcastNoteSettings {
 	podcastTemplate: string,
 	atCursor: boolean,
 	fileName: string,
-	podcastService: string,
 	folder: string
 }
 
@@ -12,9 +11,20 @@ const DEFAULT_SETTINGS: PodcastNoteSettings = {
 	podcastTemplate: "---\ntags: [Podcast]\ndate: {{Date}}\n---\n# {{Title}}\n![]({{ImageURL}})\n## Description:\n{{Description}}\n-> [Podcast Link]({{PodcastURL}})\n## Notes:\n",
 	atCursor: false,
 	fileName: "",
-	podcastService: "apple",
 	folder: ""
-}
+};
+
+const hosts = {
+	"spotify": "open.spotify.com",
+	"apple": "podcasts.apple.com",
+	"google": "podcasts.google.com",
+	"pocketcasts": "pca.st",
+	"airr": "www.airr.io",
+	"overcast": "overcast.fm",
+	"castbox": "castbox.fm",
+	"castro": "castro.fm"
+};
+
 
 export default class PodcastNote extends Plugin {
 
@@ -42,6 +52,15 @@ export default class PodcastNote extends Plugin {
 				return false;
 			}
 		});
+
+		this.addCommand({
+			id: 'add-podcast-notes-from-list',
+			name: 'Add Podcast Notes from list',
+
+			editorCallback: () => {
+				this.addNotesFromList();
+			}
+		});
 	}
 
 	onunload() {
@@ -55,6 +74,164 @@ export default class PodcastNote extends Plugin {
 	async saveSettings() {
 		await this.saveData(this.settings);
 	}
+
+	addNotesFromList(){
+
+		// let editor = this.getEditor();
+		// let selection = editor.getSelection();
+		// let words = selection.split(" ")
+		
+		// words = words.filter((value) => {
+		// 	return value.includes("https://")
+		// })
+
+		// console.log(words)
+
+		// let urls = selection.split("\n");
+		// urls.forEach((url) => {
+		// 	//console.log(url.replace("- ", ""))
+		// 	this.addNoteFromModal(url.replace("- ", ""))
+		// });
+
+	}
+
+	addNoteFromModal(url: string){
+		let {host, podcastPath} = this.getPodcastHostAndPath(url);
+		let response = this.getHttpsResponse(host, podcastPath);
+
+		new Notice("Loading Podcast Info");
+		response.then((result) => {
+				let root = this.getParsedHtml(result);
+				let {title, podcastString} = this.getMetaDataForPodcast(root, url);
+
+				if (this.settings.atCursor) {
+					this.addAtCursor(podcastString);
+				} else {
+					let fileName = this.settings.fileName.replace("{{Title}}", title).replace("{{Date}}", Date.now().toString());
+					this.addToNewNote(podcastString, fileName);
+				}
+		});
+	}
+
+	getPodcastHostAndPath(url: string){
+
+		let host = "";
+		let podcastPath = "";
+	
+		if (url.includes(hosts.apple)) {
+			host = hosts.apple;
+		} else if (url.includes(hosts.spotify)) {
+			host = hosts.spotify;
+		} else if (url.includes(hosts.google)){
+			host = hosts.google;
+		} else if (url.includes(hosts.overcast)){
+			host = hosts.overcast;
+		} else if (url.includes(hosts.pocketcasts)) {
+			host = hosts.pocketcasts;
+		} else if (url.includes(hosts.castbox)) {
+			host = hosts.castbox;
+		} else if (url.includes(hosts.castro)) {
+			host = hosts.castro;
+		} else if (url.includes(hosts.airr)) {
+			host = hosts.airr;
+		}else {
+			new Notice("This is not a valid podcast Service.");
+			return;
+		}
+	
+		podcastPath = url.split(host)[1];
+		return {"host": host, "podcastPath": podcastPath};
+	}
+	
+	getHttpsResponse(host: string, podcastPath: string) {
+		const https = require('https');
+		const options = {
+			hostname: host,
+			port: 443,
+			path: podcastPath,
+			method: 'GET',
+			headers: { 'User-Agent': 'Mozilla/5.0' }
+		}
+	
+		return new Promise((resolve, reject) => {
+			https.request(options, res => {
+				res.setEncoding('utf8');
+				let body = '';
+				res.on('data', chunk => body += chunk);
+				res.on('end', () => resolve(body));
+			}).on('error', reject).end();
+		});
+	}
+	
+	getParsedHtml(s) {
+		let parser = new DOMParser();
+		let root = parser.parseFromString(s, "text/html");
+		return root;
+	}
+	
+	getMetaDataForPodcast(root, url) {
+		let d = new Date();
+		let dateString = ("0" + d.getDate()).slice(-2) + "-" + ("0" + (d.getMonth() + 1)).slice(-2) + "-" + d.getFullYear() + " " + ("0" + d.getHours()).slice(-2) + ":" + ("0" + d.getMinutes()).slice(-2);
+		let title = "Title note found"
+		let desc = "Maybe the URL was invalid or inclompete. Open settings and check if your podcast service is supported."
+		let imageLink = ""
+		console.log(url)
+	
+		//try {
+			if (url.includes(hosts.apple)) {
+				title = root.querySelector("meta[property='og:title']").getAttribute('content');
+				desc = root.querySelector(".product-hero-desc__section").querySelector("p").innerHTML;
+				let artwork = root.querySelector(".we-artwork__source");
+				imageLink = artwork.getAttribute('srcset').split(" ")[0];
+			} else if (url.includes(hosts.airr)) {
+				title = root.querySelector("meta[property='og:title']").getAttribute('content');
+				desc = root.querySelector("meta[name='og:description']").getAttribute('content');
+				imageLink = root.querySelector("meta[property='og:image']").getAttribute('content');
+			} else if (url.includes(hosts.overcast)) {
+				title = root.querySelector("meta[name='og:title']").getAttribute('content');
+				desc = root.querySelector("meta[name='og:description']").getAttribute('content');
+				imageLink = root.querySelector("meta[name='og:image']").getAttribute('content');
+			} else{
+				title = root.querySelector("meta[property='og:title']").getAttribute('content');
+				desc = root.querySelector("meta[property='og:description']").getAttribute('content');
+				imageLink = root.querySelector("meta[property='og:image']").getAttribute('content');
+			}
+		//} catch {
+			//console.log("Error parsing webpage.");
+		//}
+	
+		let podcastString = this.applyTemplate(title, imageLink, desc, dateString, url);
+		return {"podcastString": podcastString, "title": title};
+	}
+	
+	applyTemplate(title, imageLink, desc, dateString, podcastLink) {
+		let podcastTemplate = this.settings.podcastTemplate;
+		podcastTemplate = podcastTemplate
+			.replace("{{Title}}", title)
+			.replace("{{ImageURL}}", imageLink)
+			.replace("{{Description}}", desc)
+			.replace("{{Date}}", dateString)
+			.replace("{{PodcastURL}}", podcastLink);
+		return podcastTemplate;
+	}
+	
+	
+	addAtCursor(s: string) {
+		let editor = this.getEditor();
+		var currentLine = editor.getCursor();
+		editor.replaceRange(s, currentLine, currentLine);
+	}
+
+	getEditor(){
+		let mdView = this.app.workspace.getActiveViewOfType(MarkdownView);
+		return mdView.editor;
+	}
+	
+	addToNewNote(s: string, fileName: string) {
+		fileName = fileName.replace("/", "").replace("\\", "").replace(":", "").replace(":", "");
+		this.app.vault.create(this.settings.folder + fileName + ".md", s);
+	}
+
 }
 
 
@@ -77,155 +254,9 @@ class PodcastNoteModal extends Modal {
 
 		button.addEventListener("click", () => {
 			let url = input.value;
-			let {host, podcastPath} = this.getPodcastHostAndPath(url);
-			let response = this.getHttpsResponse(host, podcastPath);
-
-			new Notice("Loading Podcast Info");
-			response.then((result) => {
-					let root = this.getParsedHtml(result);
-					let {title, podcastString} = this.getMetaDataForPodcast(root, url);
-
-					if (this.plugin.settings.atCursor) {
-						this.addAtCursor(podcastString);
-					} else {
-						let fileName = this.plugin.settings.fileName.replace("{{Title}}", title).replace("{{Date}}", Date.now().toString());
-						this.addToNewNote(podcastString, fileName);
-					}
-			})
+			this.plugin.addNoteFromModal(url)
 			this.close();
 		});
-	}
-
-
-	getPodcastHostAndPath(url: string){
-		let spotifyHost = "open.spotify.com";
-		let appleHost = "podcasts.apple.com";
-		let googleHost = "podcasts.google.com";
-		let pocketcastsHost = "pca.st";
-		let airrHost = "www.airr.io";
-		let overcastHost = "overcast.fm";
-		let castboxHost = "castbox.fm";
-		let castroHost = "castro.fm";
-
-		let host = "";
-		let podcastPath = "";
-
-		if (url.includes(spotifyHost)) {
-			this.plugin.settings.podcastService = "spotify";
-			host = spotifyHost;
-		} else if (url.includes(appleHost)) {
-			this.plugin.settings.podcastService = "apple";
-			host = appleHost;
-		} else if (url.includes(pocketcastsHost)){
-			this.plugin.settings.podcastService = "pocketcasts";
-			host = pocketcastsHost;
-		} else if (url.includes(airrHost)){
-			this.plugin.settings.podcastService = "airr";
-			host = airrHost;
-		} else if (url.includes(overcastHost)) {
-			this.plugin.settings.podcastService = "overcast";
-			host = overcastHost;
-		} else if (url.includes(castboxHost)) {
-			this.plugin.settings.podcastService = "castbox";
-			host = castboxHost;
-		} else if (url.includes(castroHost)) {
-			this.plugin.settings.podcastService = "castro";
-			host = castroHost;
-		} else if (url.includes(googleHost)) {
-			this.plugin.settings.podcastService = "google";
-			host = googleHost;
-		}else {
-			new Notice("This is not a valid podcast Service.");
-			this.close();
-			return;
-		}
-
-		podcastPath = url.split(host)[1];
-		return {"host": host, "podcastPath": podcastPath};
-	}
-
-	getHttpsResponse(host: string, podcastPath: string) {
-		const https = require('https');
-		const options = {
-			hostname: host,
-			port: 443,
-			path: podcastPath,
-			method: 'GET',
-			headers: { 'User-Agent': 'Mozilla/5.0' }
-		}
-
-		return new Promise((resolve, reject) => {
-			https.request(options, res => {
-				res.setEncoding('utf8');
-				let body = '';
-				res.on('data', chunk => body += chunk);
-				res.on('end', () => resolve(body));
-			}).on('error', reject).end();
-		});
-	}
-
-	getParsedHtml(s) {
-		let parser = new DOMParser();
-		let root = parser.parseFromString(s, "text/html");
-		return root;
-	}
-
-	getMetaDataForPodcast(root, url) {
-		let d = new Date();
-		let dateString = ("0" + d.getDate()).slice(-2) + "-" + ("0" + (d.getMonth() + 1)).slice(-2) + "-" + d.getFullYear() + " " + ("0" + d.getHours()).slice(-2) + ":" + ("0" + d.getMinutes()).slice(-2);
-		let title = "Title note found"
-		let desc = "Maybe the URL was invalid or inclompete. Open settings and check if your podcast service is supported."
-		let imageLink = ""
-
-		try {
-			if (this.plugin.settings.podcastService == "apple") {
-				title = root.querySelector("meta[property='og:title']").getAttribute('content');
-				desc = root.querySelector(".product-hero-desc__section").querySelector("p").innerHTML;
-				let artwork = root.querySelector(".we-artwork__source");
-				imageLink = artwork.getAttribute('srcset').split(" ")[0];
-			} else if (this.plugin.settings.podcastService == "airr") {
-				title = root.querySelector("meta[property='og:title']").getAttribute('content');
-				desc = root.querySelector("meta[name='og:description']").getAttribute('content');
-				imageLink = root.querySelector("meta[property='og:image']").getAttribute('content');
-			} else if (this.plugin.settings.podcastService == "overcast") {
-				title = root.querySelector("meta[name='og:title']").getAttribute('content');
-				desc = root.querySelector("meta[name='og:description']").getAttribute('content');
-				imageLink = root.querySelector("meta[name='og:image']").getAttribute('content');
-			} else{
-				title = root.querySelector("meta[property='og:title']").getAttribute('content');
-				desc = root.querySelector("meta[property='og:description']").getAttribute('content');
-				imageLink = root.querySelector("meta[property='og:image']").getAttribute('content');
-			}
-		} catch {
-			console.log("Error parsing webpage.");
-		}
-
-		let podcastString = this.applyTemplate(title, imageLink, desc, dateString, url);
-		return {"podcastString": podcastString, "title": title};
-	}
-
-	applyTemplate(title, imageLink, desc, dateString, podcastLink) {
-		let podcastTemplate = this.plugin.settings.podcastTemplate;
-		podcastTemplate = podcastTemplate
-			.replace("{{Title}}", title)
-			.replace("{{ImageURL}}", imageLink)
-			.replace("{{Description}}", desc)
-			.replace("{{Date}}", dateString)
-			.replace("{{PodcastURL}}", podcastLink);
-		return podcastTemplate;
-	}
-
-
-	addAtCursor(s: string) {
-		let mdView = this.app.workspace.getActiveViewOfType(MarkdownView);
-		let doc = mdView.editor;
-		var currentLine = doc.getCursor();
-		doc.replaceRange(s, currentLine, currentLine);
-	}
-
-	addToNewNote(s: string, fileName: string) {
-		fileName = fileName.replace("/", "").replace("\\", "").replace(":", "").replace(":", "");
-		this.app.vault.create(this.plugin.settings.folder + fileName + ".md", s);
 	}
 
 	onClose() {
@@ -247,26 +278,26 @@ class PodcastNoteSettingTab extends PluginSettingTab {
 		containerEl.empty();
 		//containerEl.createEl('h2', {text: 'Settings for Podcast Note'});
 
-		new Setting(containerEl)
-			.setName('Podcast Service')
-			.setDesc('Select your podcast service.')
-			.addDropdown(dropdown => dropdown
-				.addOptions({ 
-								"apple": "Apple Podcast",
-								"spotify": "Spotify Podcast",
-								"google": "Google Podcast",
-								"pocketcasts": "Pocket Casts",
-								"airr": "Airr",
-								"overcast": "Overcast",
-								"castbox": "Castbox",
-								"castro": "Castro"
-							})
-				.setValue(this.plugin.settings.podcastService)
-				.onChange(async () => {
-					this.plugin.settings.podcastService = dropdown.getValue()
-					await this.plugin.saveSettings()
-				})
-			);
+		// new Setting(containerEl)
+		// 	.setName('Podcast Service')
+		// 	.setDesc('Select your podcast service.')
+		// 	.addDropdown(dropdown => dropdown
+		// 		.addOptions({ 
+		// 						"apple": "Apple Podcast",
+		// 						"spotify": "Spotify Podcast",
+		// 						"google": "Google Podcast",
+		// 						"pocketcasts": "Pocket Casts",
+		// 						"airr": "Airr",
+		// 						"overcast": "Overcast",
+		// 						"castbox": "Castbox",
+		// 						"castro": "Castro"
+		// 					})
+		// 		.setValue(this.plugin.settings.podcastService)
+		// 		.onChange(async () => {
+		// 			this.plugin.settings.podcastService = dropdown.getValue()
+		// 			await this.plugin.saveSettings()
+		// 		})
+		// 	);
 
 
 		new Setting(containerEl)
