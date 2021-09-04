@@ -68,74 +68,22 @@ class PodcastNoteModal extends Modal {
 	}
 
 	onOpen() {
-
 		let { contentEl } = this;
-		let html = '<h3 style="margin-top: 0px;">Enter podcast URL:</p><input type="text"/> <br><br><button>Add Podcast Note</button>';
-		contentEl.innerHTML = html;
+		contentEl.createEl("h3", {text: "Enter podcast URL:"});
+		let input = contentEl.createEl("input", {type: "text"});
+		contentEl.createEl("br");
+		contentEl.createEl("br");
+		let button = contentEl.createEl("button", {text: "Add Podcast Note"});
 
-		contentEl.querySelector("button").addEventListener("click", () => {
-
-			let url = contentEl.querySelector("input").value;
-
-			let spotifyHost = "open.spotify.com";
-			let appleHost = "podcasts.apple.com";
-			let googleHost = "podcasts.google.com";
-			let pocketcastsHost = "pca.st";
-			let airrHost = "www.airr.io";
-			let overcastHost = "overcast.fm";
-			let castboxHost = "castbox.fm";
-			let castroHost = "castro.fm";
-			let listennotesHost = "www.listennotes.com";
-
-			let host = "";
-			let podcastPath = "";
-
-			if (url.includes(spotifyHost)) {
-				this.plugin.settings.podcastService = "spotify";
-				host = spotifyHost;
-			} else if (url.includes(appleHost)) {
-				this.plugin.settings.podcastService = "apple";
-				host = appleHost;
-			} else if (url.includes(pocketcastsHost)){
-				this.plugin.settings.podcastService = "pocketcasts";
-				host = pocketcastsHost;
-			} else if (url.includes(airrHost)){
-				this.plugin.settings.podcastService = "airr";
-				host = airrHost;
-			} else if (url.includes(overcastHost)) {
-				this.plugin.settings.podcastService = "overcast";
-				host = overcastHost;
-			} else if (url.includes(castboxHost)) {
-				this.plugin.settings.podcastService = "castbox";
-				host = castboxHost;
-			} else if (url.includes(castroHost)) {
-				this.plugin.settings.podcastService = "castro";
-				host = castroHost;
-			} else if (url.includes(googleHost)) {
-				this.plugin.settings.podcastService = "google";
-				host = googleHost;
-			}
-			
-			
-			else {
-				new Notice("This is not a valid podcast Service.");
-				this.close();
-				return;
-			}
-
-			podcastPath = url.split(host)[1];
-
+		button.addEventListener("click", () => {
+			let url = input.value;
+			let {host, podcastPath} = this.getPodcastHostAndPath(url);
 			let response = this.getHttpsResponse(host, podcastPath);
 
 			new Notice("Loading Podcast Info");
 			response.then((result) => {
-
-				//try {
 					let root = this.getParsedHtml(result);
-
-					let podcastInfo = this.getMetaDataForPodcast(root, url);
-					let title = podcastInfo[1];
-					let podcastString = podcastInfo[0];
+					let {title, podcastString} = this.getMetaDataForPodcast(root, url);
 
 					if (this.plugin.settings.atCursor) {
 						this.addAtCursor(podcastString);
@@ -143,13 +91,57 @@ class PodcastNoteModal extends Modal {
 						let fileName = this.plugin.settings.fileName.replace("{{Title}}", title).replace("{{Date}}", Date.now().toString());
 						this.addToNewNote(podcastString, fileName);
 					}
-				//} catch {
-				//	new Notice("The URL is invalid.");
-				//}
 			})
-
 			this.close();
 		});
+	}
+
+
+	getPodcastHostAndPath(url: string){
+		let spotifyHost = "open.spotify.com";
+		let appleHost = "podcasts.apple.com";
+		let googleHost = "podcasts.google.com";
+		let pocketcastsHost = "pca.st";
+		let airrHost = "www.airr.io";
+		let overcastHost = "overcast.fm";
+		let castboxHost = "castbox.fm";
+		let castroHost = "castro.fm";
+
+		let host = "";
+		let podcastPath = "";
+
+		if (url.includes(spotifyHost)) {
+			this.plugin.settings.podcastService = "spotify";
+			host = spotifyHost;
+		} else if (url.includes(appleHost)) {
+			this.plugin.settings.podcastService = "apple";
+			host = appleHost;
+		} else if (url.includes(pocketcastsHost)){
+			this.plugin.settings.podcastService = "pocketcasts";
+			host = pocketcastsHost;
+		} else if (url.includes(airrHost)){
+			this.plugin.settings.podcastService = "airr";
+			host = airrHost;
+		} else if (url.includes(overcastHost)) {
+			this.plugin.settings.podcastService = "overcast";
+			host = overcastHost;
+		} else if (url.includes(castboxHost)) {
+			this.plugin.settings.podcastService = "castbox";
+			host = castboxHost;
+		} else if (url.includes(castroHost)) {
+			this.plugin.settings.podcastService = "castro";
+			host = castroHost;
+		} else if (url.includes(googleHost)) {
+			this.plugin.settings.podcastService = "google";
+			host = googleHost;
+		}else {
+			new Notice("This is not a valid podcast Service.");
+			this.close();
+			return;
+		}
+
+		podcastPath = url.split(host)[1];
+		return {"host": host, "podcastPath": podcastPath};
 	}
 
 	getHttpsResponse(host: string, podcastPath: string) {
@@ -175,19 +167,14 @@ class PodcastNoteModal extends Modal {
 	getParsedHtml(s) {
 		let parser = new DOMParser();
 		let root = parser.parseFromString(s, "text/html");
-		console.log(root)
 		return root;
 	}
 
 	getMetaDataForPodcast(root, url) {
-
-		console.log(root)
-		console.log(url)
-
 		let d = new Date();
 		let dateString = ("0" + d.getDate()).slice(-2) + "-" + ("0" + (d.getMonth() + 1)).slice(-2) + "-" + d.getFullYear() + " " + ("0" + d.getHours()).slice(-2) + ":" + ("0" + d.getMinutes()).slice(-2);
-		let title = "New Podcast Note"
-		let desc = ""
+		let title = "Title note found"
+		let desc = "Maybe the URL was invalid or inclompete. Open settings and check if your podcast service is supported."
 		let imageLink = ""
 
 		try {
@@ -210,11 +197,11 @@ class PodcastNoteModal extends Modal {
 				imageLink = root.querySelector("meta[property='og:image']").getAttribute('content');
 			}
 		} catch {
-			console.log("Error parsing webpage.")
+			console.log("Error parsing webpage.");
 		}
 
-		let podcastTemplate = this.applyTemplate(title, imageLink, desc, dateString, url);
-		return [podcastTemplate, title];
+		let podcastString = this.applyTemplate(title, imageLink, desc, dateString, url);
+		return {"podcastString": podcastString, "title": title};
 	}
 
 	applyTemplate(title, imageLink, desc, dateString, podcastLink) {
