@@ -1,7 +1,7 @@
 {
   "name": "podcast-note",
   "version": "0.12.0",
-  "description": "Writing notes on podcasts.",
+  "description": "Podcast Note lets you automatically add podcast information to your notes.",
   "main": "main.js",
   "scripts": {
     "dev": "rollup --config rollup.config.js -w",
