@@ -20,8 +20,9 @@ So far these podcast services are supported:
 - Castbox
 
 ## Demo
-https://user-images.githubusercontent.com/67844154/131218349-03de1a72-084d-40bc-9cbb-947b0def3a3f.mp4
 
+
+### Example Podcast Note:
 ![Podcast Note example](https://user-images.githubusercontent.com/67844154/131222181-e9a52afa-fee2-4eff-83e1-f03deb633df3.png)
 
 
@@ -47,9 +48,6 @@ Set the folder where new Podcast notes will be saved. The path is relative to yo
 
 ### 4. Insert podcast note at cursor
 Specify whether you want to create a new note or whether you want the metadata to be inserted at your cursor.
-
-### Settings image
-
 
 ## Questions
 If you have any questions, feedback or feature requests, let me know and write a mail at [marc-julian.de](https://www.marc-julian.de) or create a new issue on <a href="https://github.com/marcjulianschwarz/obsidian-podcast-note">GitHub</a>
