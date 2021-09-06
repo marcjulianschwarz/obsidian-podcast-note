@@ -8,9 +8,9 @@ interface PodcastNoteSettings {
 }
 
 const DEFAULT_SETTINGS: PodcastNoteSettings = {
-	podcastTemplate: "---\ntags: [Podcast]\ndate: {{Date}}\n---\n# {{Title}}\n![]({{ImageURL}})\n## Description:\n{{Description}}\n-> [Podcast Link]({{PodcastURL}})\n## Notes:\n",
+	podcastTemplate: "---\ntags: [Podcast]\ndate: {{Date}}\n---\n# {{Title}}\n![]({{ImageURL}})\n## Description:\n{{Description}}\n-> [Podcast Link]({{PodcastURL}})\n\n## Notes:\n",
 	atCursor: false,
-	fileName: "",
+	fileName: "{{Title}} - Notes",
 	folder: ""
 };
 
@@ -108,9 +108,8 @@ export default class PodcastNote extends Plugin {
 
 		}).catch((reason) => {
 			new Notice("Couldnt load podcast data. No internet connection?");
-			console.log("No connection, reason: \n" + reason);
-		}).finally(() => {
 			this.makePodcastNote("# Notes on podcast\n-> [Podcast Link](" + url + ")\n", "Default");
+			console.log("No connection, reason: \n" + reason);
 		});
 	}
 
