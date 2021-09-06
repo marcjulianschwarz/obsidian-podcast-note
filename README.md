@@ -22,7 +22,7 @@ So far these podcast services are supported:
 ## Demo
 
 
-### Example Podcast Note:
+### Example Podcast Notes:
 ![Podcast Note example](https://user-images.githubusercontent.com/67844154/131222181-e9a52afa-fee2-4eff-83e1-f03deb633df3.png)
 
 
