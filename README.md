@@ -23,7 +23,10 @@ So far these podcast services are supported:
 
 
 ### Example Podcast Notes:
+
 ![Podcast Note example](https://user-images.githubusercontent.com/67844154/131222181-e9a52afa-fee2-4eff-83e1-f03deb633df3.png)
+<img width="900" alt="Podcast Note example editor" src="https://user-images.githubusercontent.com/67844154/132244566-b1c0acea-8ab5-4250-a6bd-a3f0559b1075.png">
+
 
 
 ## Settings
@@ -36,7 +39,25 @@ Use these three placeholders:
 - `{{PodcastURL}}`  -> url to podcast
 - `{{Date}}`        -> date (format: Day-Month-Year Hours:Seconds)
 
-### 2. New note template
+#### Example template:
+```
+---
+tags: [Podcast]
+date: {{Date}}
+---
+# {{Title}} 
+![]({{ImageURL}})
+## Description: 
+> {{Description}}
+-> [Podcast Link]({{PodcastURL}})
+
+## Notes:
+```
+will create this note:
+<img width="900" alt="Podcast Note example editor" src="https://user-images.githubusercontent.com/67844154/132244681-e629ec06-a44a-4f8c-b9db-5a83576ad186.png">
+
+
+### 2. Filename template
 Specify whether the podcast note will be inserted at your cursor or whether a new note will be added.
 You can also use a template for the filename.
 Placeholders:
