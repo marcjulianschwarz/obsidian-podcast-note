@@ -22,12 +22,9 @@ So far these podcast services are supported:
 ## Demo
 
 
-### Example Podcast Notes:
+### Example Podcast Note:
 
 ![Podcast Note example](https://user-images.githubusercontent.com/67844154/131222181-e9a52afa-fee2-4eff-83e1-f03deb633df3.png)
-<img width="900" alt="Podcast Note example editor" src="https://user-images.githubusercontent.com/67844154/132244566-b1c0acea-8ab5-4250-a6bd-a3f0559b1075.png">
-
-
 
 ## Settings
 ### 1. Template
@@ -53,7 +50,8 @@ date: {{Date}}
 
 ## Notes:
 ```
-will create this note:
+**will create this note:**
+<br><br>
 <img width="900" alt="Podcast Note example editor" src="https://user-images.githubusercontent.com/67844154/132244681-e629ec06-a44a-4f8c-b9db-5a83576ad186.png">
 
 
