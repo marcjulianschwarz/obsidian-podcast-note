@@ -1,9 +1,7 @@
 # Podcast Note
 
-work in progress..
-
-This plugin allows you to quickly add podcast metadata to your notes.
-
+*Podcast Note* is a great way to write notes on podcasts. With a single URL you will get the title, image and description of your podcast.
+Using a custom template you can style the note to your likings.
 
 ## How to use it
 You can add a new podcast note by opening the command pallete (cmd + p) and selecting "Add Podcast Note".
@@ -26,8 +24,6 @@ https://user-images.githubusercontent.com/67844154/131218349-03de1a72-084d-40bc-
 
 
 ## Settings
-
-
 ### 1. Template
 Here you can specify how the metadata for your podcast notes looks like. 
 Use these three placeholders:
@@ -45,17 +41,16 @@ Placeholders:
 - {{Date}}
 
 ### 3. Folder
-Set the folder where new Podcast notes will be saved.
-
+Set the folder where new Podcast notes will be saved. The path is relative to your vault. For example "folder/podcast_folder/" will become "path/to/vault/folder/podcastfolder".
 
 ### 4. Insert podcast note at cursor
-
-Specify whether you want to create a new note or whether you want the meta data to be inserted at your cursor.
+Specify whether you want to create a new note or whether you want the metadata to be inserted at your cursor.
 
 ### Settings image
-![Obsidian Podcast Note Plugin Settings](https://user-images.githubusercontent.com/67844154/131218391-eedc24c7-41fc-4947-837c-21cd6e451757.png)
 
 
 ## Questions
-If you have any questions, let me know and write a mail at [marc-julian.de](https://www.marc-julian.de)
+If you have any questions, feedback or feature requests, let me know and write a mail at [marc-julian.de](https://www.marc-julian.de) or create a new issue on <a href="https://github.com/marcjulianschwarz/obsidian-podcast-note">GitHub</a>
 
+Do you like the plugin?<br><br>
+<a href="https://www.buymeacoffee.com/marcjulian" target="_blank"><img src="https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png" alt="Buy Me A Coffee" style="height: 41px !important;width: 174px !important;box-shadow: 0px 3px 2px 0px rgba(190, 190, 190, 0.5) !important;-webkit-box-shadow: 0px 3px 2px 0px rgba(190, 190, 190, 0.5) !important;" ></a>
