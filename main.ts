@@ -1,4 +1,4 @@
-import { App, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting } from 'obsidian';
+import { App, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting, request, moment } from 'obsidian';
 
 interface PodcastNoteSettings {
 	podcastTemplate: string,
@@ -95,72 +95,32 @@ export default class PodcastNote extends Plugin {
 
 	}
 
-	addNoteFromModal(url: string) {
-		let { host, podcastPath } = this.getPodcastHostAndPath(url);
-		let response = this.getHttpsResponse(host, podcastPath);
+	async addNoteFromModal(url: string) {
 
 		new Notice("Loading Podcast Info");
-
-		response.then((result) => {
-			let root = this.getParsedHtml(result);
-			let { title, podcastString } = this.getMetaDataForPodcast(root, url);
-			this.makePodcastNote(podcastString, title);
-
-		}).catch((reason) => {
-			new Notice("Couldnt load podcast data. No internet connection?");
-			this.makePodcastNote("# Notes on podcast\n-> [Podcast Link](" + url + ")\n", "Default");
-			console.log("No connection, reason: \n" + reason);
-		});
+		if (this.checkPodcastURL(url)){
+			try {
+				let html = await request({url: url, method: "GET"});
+				let root = this.getParsedHtml(html);
+				let { title, podcastString } = this.getMetaDataForPodcast(root, url);
+				this.makePodcastNote(podcastString, title);
+			} catch (reason) {
+				new Notice("Couldnt load podcast data. No internet connection?");
+				this.makePodcastNote("# Notes on podcast\n-> [Podcast Link](" + url + ")\n", "Default");
+				console.log("No connection, reason: \n" + reason);
+			}
+		} else {
+			new Notice("This podcast service is not supported or the url is invalid.")
+		}
 	}
 
-	getPodcastHostAndPath(url: string) {
-
-		let host = "";
-		let podcastPath = "";
-
-		if (url.includes(hosts.apple)) {
-			host = hosts.apple;
-		} else if (url.includes(hosts.spotify)) {
-			host = hosts.spotify;
-		} else if (url.includes(hosts.google)) {
-			host = hosts.google;
-		} else if (url.includes(hosts.overcast)) {
-			host = hosts.overcast;
-		} else if (url.includes(hosts.pocketcasts)) {
-			host = hosts.pocketcasts;
-		} else if (url.includes(hosts.castbox)) {
-			host = hosts.castbox;
-		} else if (url.includes(hosts.castro)) {
-			host = hosts.castro;
-		} else if (url.includes(hosts.airr)) {
-			host = hosts.airr;
+	checkPodcastURL(url: string) {
+		if (new RegExp(Object.values(hosts).join("|")).test(url)) {
+			return true;
 		} else {
 			new Notice("This is not a valid podcast Service.");
-			return;
+			return false;
 		}
-
-		podcastPath = url.split(host)[1];
-		return { "host": host, "podcastPath": podcastPath };
-	}
-
-	getHttpsResponse(host: string, podcastPath: string) {
-		const https = require('https');
-		const options = {
-			hostname: host,
-			port: 443,
-			path: podcastPath,
-			method: 'GET',
-			headers: { 'User-Agent': 'Mozilla/5.0' }
-		}
-
-		return new Promise((resolve, reject) => {
-			https.request(options, res => {
-				res.setEncoding('utf8');
-				let body = '';
-				res.on('data', chunk => body += chunk);
-				res.on('end', () => resolve(body));
-			}).on('error', reject).end();
-		});
 	}
 
 	getParsedHtml(s) {
@@ -170,8 +130,7 @@ export default class PodcastNote extends Plugin {
 	}
 
 	getMetaDataForPodcast(root: Document, url: string) {
-		let d = new Date();
-		let dateString = ("0" + d.getDate()).slice(-2) + "-" + ("0" + (d.getMonth() + 1)).slice(-2) + "-" + d.getFullYear() + " " + ("0" + d.getHours()).slice(-2) + ":" + ("0" + d.getMinutes()).slice(-2);
+		let date = moment().format("YYYY-MM-DD")
 		let title = "Title not found"
 		let desc = "Maybe the URL was invalid or inclompete. Open settings and check if your podcast service is supported."
 		let imageLink = ""
@@ -199,7 +158,7 @@ export default class PodcastNote extends Plugin {
 			console.log("Error parsing: " + url);
 		}
 
-		let podcastString = this.applyTemplate(title, imageLink, desc, dateString, url);
+		let podcastString = this.applyTemplate(title, imageLink, desc, date, url);
 		return { "podcastString": podcastString, "title": title };
 	}
 
@@ -217,18 +176,20 @@ export default class PodcastNote extends Plugin {
 
 	addAtCursor(s: string) {
 		let editor = this.getEditor();
-		var currentLine = editor.getCursor();
+		let currentLine = editor.getCursor();
 		editor.replaceRange(s, currentLine, currentLine);
 	}
 
 	getEditor() {
 		let mdView = this.app.workspace.getActiveViewOfType(MarkdownView);
-		return mdView.editor;
+		if (mdView){
+			return mdView.editor;
+		}
 	}
 
 	addToNewNote(s: string, fileName: string) {
-		fileName = fileName.replace("/", "").replace("\\", "").replace(":", "").replace(":", "");
-		this.app.vault.create(this.settings.folder + fileName + ".md", s);
+		fileName = fileName.replace(/[\\/:"*?<>|]*/g, '');
+		this.app.vault.create(this.settings.folder + "/" + fileName + ".md", s);
 	}
 
 	makePodcastNote(podcastString: string, title: string) {
@@ -236,7 +197,18 @@ export default class PodcastNote extends Plugin {
 			this.addAtCursor(podcastString);
 		} else {
 			let fileName = this.settings.fileName.replace("{{Title}}", title).replace("{{Date}}", Date.now().toString());
+			
+			// let files = this.app.vault.getFiles();
+			// let filtered = files.filter((file) => {
+			// 	return (file.name == fileName);
+			// });
+			// if (filtered.length != 0){
+			// 	new Notice("This filename already exists.");
+			// }else {
+			// 	this.addToNewNote(podcastString, fileName);
+			// }
 			this.addToNewNote(podcastString, fileName);
+
 		}
 	}
 
