@@ -84,7 +84,7 @@ export default class PodcastNote extends Plugin {
 
 			for (let podcast of podcasts){
 				let filename = await this.addPodcastNote(podcast.url);
-				selection = selection.replace(podcast.markdown, "[[" + filename + " | " + podcast.linkTitle + "]]");
+				selection = selection.replace(podcast.markdown, "[[" + filename + podcast.linkTitle + "]]");
 			}
 			editor.replaceSelection(selection);
 
@@ -121,14 +121,24 @@ export default class PodcastNote extends Plugin {
 	}
 
 	getPodcastsFromSelection(selection: string){
+
 		let reg = /\[([^\]]*)\]\(([^\)]+)\)/g;
 		let m;
 		let podcasts = [];
+		
 		while ((m = reg.exec(selection)) !== null){
 			let url = m[2];
 			let linkTitle = m[1];
-			podcasts.push({"url": url, "linkTitle": linkTitle, "markdown": m[0]});
+			podcasts.push({"url": url, "linkTitle": " | " + linkTitle, "markdown": m[0]});
 		}
+
+		let words = selection.replace(/(\r\n|\n|\r)/gm, "").split(" ");
+		words.forEach((word) => {
+			if (word.startsWith("https://")){
+				podcasts.push({"url": word, "linkTitle": "", "markdown": word});
+			}
+		});
+
 		return podcasts;
 	}
 
