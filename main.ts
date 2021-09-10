@@ -53,14 +53,14 @@ export default class PodcastNote extends Plugin {
 			}
 		});
 
-		// this.addCommand({
-		// 	id: 'add-podcast-notes-from-list',
-		// 	name: 'Add Podcast Notes from list',
+		this.addCommand({
+			id: 'add-podcast-notes-from-selection',
+			name: 'Add Podcast Notes from selection',
 
-		// 	editorCallback: () => {
-		// 		this.addNotesFromList();
-		// 	}
-		// });
+			editorCallback: () => {
+				this.addNotesFromList();
+			}
+		});
 	}
 
 	onunload() {
@@ -75,34 +75,42 @@ export default class PodcastNote extends Plugin {
 		await this.saveData(this.settings);
 	}
 
-	addNotesFromList() {
+	async addNotesFromList() {
 
-		// let editor = this.getEditor();
-		// let selection = editor.getSelection();
-		// let words = selection.split(" ")
+		let editor = this.getEditor();
+		if (editor){
+			let selection = editor.getSelection();
+			let podcasts = this.getPodcastsFromSelection(selection);
 
-		// words = words.filter((value) => {
-		// 	return value.includes("https://")
-		// })
+			for (let podcast of podcasts){
+				let filename = await this.addPodcastNote(podcast.url);
+				selection = selection.replace(podcast.markdown, "[[" + filename + " | " + podcast.linkTitle + "]]");
+			}
+			editor.replaceSelection(selection);
 
-		// console.log(words)
-
-		// let urls = selection.split("\n");
-		// urls.forEach((url) => {
-		// 	//console.log(url.replace("- ", ""))
-		// 	this.addNoteFromModal(url.replace("- ", ""))
-		// });
+		} else {
+			new Notice("You have to be in the editor to do this.");
+		}
 
 	}
 
-	async addNoteFromModal(url: string) {
+	async addPodcastNote(url: string) {
+		let { title, podcastString } = await this.getTitleAndPodcastString(url);
+		return this.addNewNote(podcastString, title);
+	}
+
+	async insertPodcastNote(url: string){
+		let { title, podcastString } = await this.getTitleAndPodcastString(url);
+		this.addAtCursor(podcastString);
+	}
+
+	async getTitleAndPodcastString(url){
 		new Notice("Loading Podcast Info");
 		if (this.checkPodcastURL(url)){
 			try {
 				let html = await request({url: url, method: "GET"});
 				let root = this.getParsedHtml(html);
-				let { title, podcastString } = this.getMetaDataForPodcast(root, url);
-				this.makePodcastNote(podcastString, title);
+				return this.getMetaDataForPodcast(root, url);
 			} catch (reason) {
 				this.podcastError(url, "Couldnt load podcast data. No internet connection?");
 				console.log("No connection, reason: \n" + reason);
@@ -112,9 +120,21 @@ export default class PodcastNote extends Plugin {
 		}
 	}
 
+	getPodcastsFromSelection(selection: string){
+		let reg = /\[([^\]]*)\]\(([^\)]+)\)/g;
+		let m;
+		let podcasts = [];
+		while ((m = reg.exec(selection)) !== null){
+			let url = m[2];
+			let linkTitle = m[1];
+			podcasts.push({"url": url, "linkTitle": linkTitle, "markdown": m[0]});
+		}
+		return podcasts;
+	}
+
 	podcastError(url, msg){
 		new Notice(msg);
-		this.makePodcastNote("# Notes on podcast\n-> [Podcast Link](" + url + ")\n", "Default");
+		this.addNewNote("# Notes on podcast\n-> [Podcast Link](" + url + ")\n", "Default");
 	}
 
 	checkPodcastURL(url: string) {
@@ -177,7 +197,6 @@ export default class PodcastNote extends Plugin {
 		return podcastTemplate;
 	}
 
-
 	addAtCursor(s: string) {
 		let editor = this.getEditor();
 		if (editor){
@@ -193,32 +212,14 @@ export default class PodcastNote extends Plugin {
 		return mdView.editor;
 	}
 
-	addToNewNote(s: string, fileName: string) {
+	addNewNote(s: string, title: string) {
+		let fileName = this.settings.fileName
+						.replace(/{{Title}}/g, title)
+						.replace(/{{Timestamp}}/g, Date.now().toString())
+						.replace(/{{Date}}/g, moment().format("YYYY-MM-DD"));
 		fileName = fileName.replace(/[\\/:"*?<>|]*/g, '');
 		this.app.vault.create(this.settings.folder + "/" + fileName + ".md", s);
-	}
-
-	makePodcastNote(podcastString: string, title: string) {
-		if (this.settings.atCursor) {
-			this.addAtCursor(podcastString);
-		} else {
-			let fileName = this.settings.fileName
-				.replace(/{{Title}}/g, title)
-				.replace(/{{Timestamp}}/g, Date.now().toString())
-				.replace(/{{Date}}/g, moment().format("YYYY-MM-DD"));
-			
-			// let files = this.app.vault.getFiles();
-			// let filtered = files.filter((file) => {
-			// 	return (file.name == fileName);
-			// });
-			// if (filtered.length != 0){
-			// 	new Notice("This filename already exists.");
-			// }else {
-			// 	this.addToNewNote(podcastString, fileName);
-			// }
-			this.addToNewNote(podcastString, fileName);
-
-		}
+		return fileName;
 	}
 
 }
@@ -243,7 +244,11 @@ class PodcastNoteModal extends Modal {
 
 		button.addEventListener("click", () => {
 			let url = input.value;
-			this.plugin.addNoteFromModal(url)
+			if (this.plugin.settings.atCursor){
+				this.plugin.insertPodcastNote(url);
+			}else{
+				this.plugin.addPodcastNote(url);
+			}
 			this.close();
 		});
 	}
