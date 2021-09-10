@@ -5,9 +5,15 @@ Using a custom template you can style the note to your likings.
 More settings and features will be explained further down.
 
 ## How to use it
-You can add a new podcast note by opening the command pallete (cmd + p) and selecting "Add Podcast Note".
+You can add new podcast notes by opening the command pallete (cmd + p) and searching for "Podcast Note" commands:
+### Add Podcast Note
 A prompt will open where you can enter the URL for the podcast you want to take notes on. 
 Of course you can also specify a keyboard shortcut to trigger the prompt.
+
+### Add Podcast Notes from selection
+This command will only be visible in editor mode. 
+Make sure you have text selected which contains markdown links to podcast episodes. Running the command will create new podcast notes for every url in the selected text. It will also automatically link these notes.
+
 ### Supported Podcast services
 So far these podcast services are supported:
 - Apple Podcast
@@ -21,7 +27,6 @@ So far these podcast services are supported:
 
 ## Demo
 
-
 ### Example Podcast Note:
 
 ![Podcast Note example](https://user-images.githubusercontent.com/67844154/131222181-e9a52afa-fee2-4eff-83e1-f03deb633df3.png)
@@ -34,7 +39,8 @@ Use these three placeholders:
 - `{{ImageURL}}`    -> image url of your podcast
 - `{{Description}}` -> short podcast description
 - `{{PodcastURL}}`  -> url to podcast
-- `{{Date}}`        -> date (format: Day-Month-Year Hours:Seconds)
+- `{{Date}}`        -> date (format: Day-Month-Year)
+- `{{Timestamp}}`   -> current timestamp
 
 #### Example template:
 ```
@@ -59,11 +65,12 @@ date: {{Date}}
 Specify whether the podcast note will be inserted at your cursor or whether a new note will be added.
 You can also use a template for the filename.
 Placeholders:
-- `{{Title}}`   -> title of your podcast
-- `{{Date}}`    -> timestamp (like zettelkasten id)
+- `{{Title}}`       -> title of your podcast
+- `{{Timestamp}}`   -> timestamp (like zettelkasten id)
+- `{{Date}}`        -> date (format: Day-Month-Year)
 
 ### 3. Folder
-Set the folder where new Podcast notes will be saved. The path is relative to your vault. For example `folder/podcast_folder/` will become `path/to/vault/folder/podcastfolder`.
+Set the folder where new Podcast notes will be saved. The path is relative to your vault. For example `folder/podcast_folder` will become `path/to/vault/folder/podcastfolder`.
 
 ### 4. Insert podcast note at cursor
 Specify whether you want to create a new note or whether you want the metadata to be inserted at your cursor.
@@ -75,9 +82,20 @@ Do you like the plugin?<br><br>
 <a href="https://www.buymeacoffee.com/marcjulian" target="_blank"><img src="https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png" alt="Buy Me A Coffee" style="height: 41px !important;width: 174px !important;box-shadow: 0px 3px 2px 0px rgba(190, 190, 190, 0.5) !important;-webkit-box-shadow: 0px 3px 2px 0px rgba(190, 190, 190, 0.5) !important;" ></a>
 
 ## Future versions will include:
-- create podcast note from selection
+See <a href="https://github.com/marcjulianschwarz/obsidian-podcast-note/issues">issues for Podcast Note</a>.
 
 ## Versions
-*1.0.0*: Initital release.
+The numbers in "[]" are the issue numbers associated with the fix or feature.
+
+*1.0.0*: 
+- Initital release.
+
+*1.1.1*:
+- [#7, #8] Bug fixes (custom folder was not working as expected, multiple occurrences of same placeholder didnt work)
+- [#2] New command: *Add Podcast Notes from selection*
+    - fetches markdown links from selection
+    - creates podcast note
+    - replaces markdown link with link to podcast note
+
 
 
