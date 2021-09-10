@@ -126,13 +126,16 @@ export default class PodcastNote extends Plugin {
 		let m;
 		let podcasts = [];
 		
+		// Search for markdown links
 		while ((m = reg.exec(selection)) !== null){
 			let url = m[2];
 			let linkTitle = m[1];
 			podcasts.push({"url": url, "linkTitle": " | " + linkTitle, "markdown": m[0]});
 		}
 
-		let words = selection.replace(/(\r\n|\n|\r)/gm, "").split(" ");
+		// Search for pure links
+		let words = selection.split(/[\r\n|\n|\r|\s]/);
+		console.log(words);
 		words.forEach((word) => {
 			if (word.startsWith("https://")){
 				podcasts.push({"url": word, "linkTitle": "", "markdown": word});
