@@ -96,7 +96,6 @@ export default class PodcastNote extends Plugin {
 	}
 
 	async addNoteFromModal(url: string) {
-
 		new Notice("Loading Podcast Info");
 		if (this.checkPodcastURL(url)){
 			try {
@@ -105,13 +104,17 @@ export default class PodcastNote extends Plugin {
 				let { title, podcastString } = this.getMetaDataForPodcast(root, url);
 				this.makePodcastNote(podcastString, title);
 			} catch (reason) {
-				new Notice("Couldnt load podcast data. No internet connection?");
-				this.makePodcastNote("# Notes on podcast\n-> [Podcast Link](" + url + ")\n", "Default");
+				this.podcastError(url, "Couldnt load podcast data. No internet connection?");
 				console.log("No connection, reason: \n" + reason);
 			}
 		} else {
-			new Notice("This podcast service is not supported or the url is invalid.")
+			this.podcastError(url, "This podcast service is not supported or the url is invalid.");
 		}
+	}
+
+	podcastError(url, msg){
+		new Notice(msg);
+		this.makePodcastNote("# Notes on podcast\n-> [Podcast Link](" + url + ")\n", "Default");
 	}
 
 	checkPodcastURL(url: string) {
@@ -165,26 +168,29 @@ export default class PodcastNote extends Plugin {
 	applyTemplate(title, imageLink, desc, dateString, podcastLink) {
 		let podcastTemplate = this.settings.podcastTemplate;
 		podcastTemplate = podcastTemplate
-			.replace("{{Title}}", title)
-			.replace("{{ImageURL}}", imageLink)
-			.replace("{{Description}}", desc)
-			.replace("{{Date}}", dateString)
-			.replace("{{PodcastURL}}", podcastLink);
+			.replace(/{{Title}}/g, title)
+			.replace(/{{ImageURL}}/g, imageLink)
+			.replace(/{{Description}}/g, desc)
+			.replace(/{{Date}}/g, dateString)
+			.replace(/{{Timestamp}}/g, Date.now().toString())
+			.replace(/{{PodcastURL}}/g, podcastLink);
 		return podcastTemplate;
 	}
 
 
 	addAtCursor(s: string) {
 		let editor = this.getEditor();
-		let currentLine = editor.getCursor();
-		editor.replaceRange(s, currentLine, currentLine);
+		if (editor){
+			let currentLine = editor.getCursor();
+			editor.replaceRange(s, currentLine, currentLine);
+		} else {
+			new Notice("You have to be in the editor to do this.");
+		}
 	}
 
 	getEditor() {
 		let mdView = this.app.workspace.getActiveViewOfType(MarkdownView);
-		if (mdView){
-			return mdView.editor;
-		}
+		return mdView.editor;
 	}
 
 	addToNewNote(s: string, fileName: string) {
@@ -196,7 +202,10 @@ export default class PodcastNote extends Plugin {
 		if (this.settings.atCursor) {
 			this.addAtCursor(podcastString);
 		} else {
-			let fileName = this.settings.fileName.replace("{{Title}}", title).replace("{{Date}}", Date.now().toString());
+			let fileName = this.settings.fileName
+				.replace(/{{Title}}/g, title)
+				.replace(/{{Timestamp}}/g, Date.now().toString())
+				.replace(/{{Date}}/g, moment().format("YYYY-MM-DD"));
 			
 			// let files = this.app.vault.getFiles();
 			// let filtered = files.filter((file) => {
@@ -258,31 +267,9 @@ class PodcastNoteSettingTab extends PluginSettingTab {
 		containerEl.empty();
 		containerEl.createEl('h2', { text: 'Settings for Podcast Note' });
 
-		// new Setting(containerEl)
-		// 	.setName('Podcast Service')
-		// 	.setDesc('Select your podcast service.')
-		// 	.addDropdown(dropdown => dropdown
-		// 		.addOptions({ 
-		// 						"apple": "Apple Podcast",
-		// 						"spotify": "Spotify Podcast",
-		// 						"google": "Google Podcast",
-		// 						"pocketcasts": "Pocket Casts",
-		// 						"airr": "Airr",
-		// 						"overcast": "Overcast",
-		// 						"castbox": "Castbox",
-		// 						"castro": "Castro"
-		// 					})
-		// 		.setValue(this.plugin.settings.podcastService)
-		// 		.onChange(async () => {
-		// 			this.plugin.settings.podcastService = dropdown.getValue()
-		// 			await this.plugin.saveSettings()
-		// 		})
-		// 	);
-
-
 		new Setting(containerEl)
 			.setName('Template')
-			.setDesc("you can define your own template. Available placeholders are: {{Title}}, {{ImageURL}}, {{Description}}, {{PodcastURL}}, {{Date}}")
+			.setDesc("you can define your own template. Available placeholders are: {{Title}}, {{ImageURL}}, {{Description}}, {{PodcastURL}}, {{Date}}, {{Timestamp}}")
 			.addTextArea((textarea) => {
 				textarea
 					.setValue(this.plugin.settings.podcastTemplate)
@@ -300,7 +287,7 @@ class PodcastNoteSettingTab extends PluginSettingTab {
 			.setDesc('New Podcast Notes will be saved here (default: Vault folder)')
 			.addTextArea(textarea => textarea
 				.setValue(this.plugin.settings.folder)
-				.setPlaceholder("Podcast Folder/")
+				.setPlaceholder("example: Podcasts")
 				.onChange(async () => {
 					this.plugin.settings.folder = textarea.getValue();
 					await this.plugin.saveSettings()
@@ -309,7 +296,7 @@ class PodcastNoteSettingTab extends PluginSettingTab {
 
 		new Setting(containerEl)
 			.setName('Filename template')
-			.setDesc('Filename template when "New note" is selected. Available placeholders are {{Title}}, {{Date}}')
+			.setDesc('Filename template when "New note" is selected. Available placeholders are {{Title}}, {{Timestamp}}, {{Date}}')
 			.addTextArea(textarea => textarea
 				.setValue(this.plugin.settings.fileName)
 				.onChange(async () => {
