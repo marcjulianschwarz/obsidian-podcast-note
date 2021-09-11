@@ -97,5 +97,7 @@ The numbers in "[]" are the issue numbers associated with the fix or feature.
     - creates podcast note
     - replaces markdown link with link to podcast note
 
+*1.2.0*:
+- Podcast Note is now working on Obsidian mobile
 
 

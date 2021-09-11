@@ -32,7 +32,6 @@ export default class PodcastNote extends Plugin {
 
 	async onload() {
 		console.log('loading plugin PodcastNote');
-
 		await this.loadSettings();
 
 		this.addSettingTab(new PodcastNoteSettingTab(this.app, this));
@@ -75,6 +74,17 @@ export default class PodcastNote extends Plugin {
 		await this.saveData(this.settings);
 	}
 
+	async getAirrQuoteTranscript(url){
+		let html = await this.getHtml(url);
+		let root = this.getParsedHtml(html);
+		let airrQuoteTranscript = root.querySelector(".quote_contextContainer__2afpx");
+		console.log(root);
+	}
+
+	async getHtml(url){
+		return await request({url: url, method: "GET"});
+	}
+
 	async addNotesFromList() {
 
 		let editor = this.getEditor();
@@ -108,7 +118,7 @@ export default class PodcastNote extends Plugin {
 		new Notice("Loading Podcast Info");
 		if (this.checkPodcastURL(url)){
 			try {
-				let html = await request({url: url, method: "GET"});
+				let html = await this.getHtml(url);
 				let root = this.getParsedHtml(html);
 				return this.getMetaDataForPodcast(root, url);
 			} catch (reason) {
