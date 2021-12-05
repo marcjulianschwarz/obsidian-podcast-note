@@ -19,6 +19,7 @@
     "rollup": "^2.32.1",
     "tslib": "^2.2.0",
     "typescript": "^4.2.4",
-    "nth-check": ">=2.0.1"
+    "nth-check": ">=2.0.1",
+    "json-schema": ">=0.4.0"
   }
 }
