@@ -102,12 +102,9 @@ The numbers in "[]" are the issue numbers associated with the fix or feature.
 
 *1.1.2*:
 - [#12] *Add Podcast Notes from selection* now working with pure links
-- 
-
-*1.2.0*:
 - Podcast Note is now working on Obsidian mobile
 
-*1.3.0*:
+*1.2.0*:
 - [#15] Notes on YouTube videos is now possible
 - [#14] Support for show notes (PocketCasts and Castro)
 
