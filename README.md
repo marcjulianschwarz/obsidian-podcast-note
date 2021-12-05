@@ -24,6 +24,7 @@ So far these podcast services are supported:
 - Overcast
 - Castro
 - Castbox
+- YouTube
 
 ## Demo
 
@@ -38,6 +39,8 @@ Use these three placeholders:
 - `{{Title}}`       -> title of your podcast
 - `{{ImageURL}}`    -> image url of your podcast
 - `{{Description}}` -> short podcast description
+- `{{ShowNotes}}`   -> show notes (only for PocketCasts and Castro)
+- `{{EpisodeDate}}` -> date when podcast has been published (only for PocketCasts)
 - `{{PodcastURL}}`  -> url to podcast
 - `{{Date}}`        -> date (format: Day-Month-Year)
 - `{{Timestamp}}`   -> current timestamp
@@ -92,12 +95,19 @@ The numbers in "[]" are the issue numbers associated with the fix or feature.
 
 *1.1.1*:
 - [#7, #8] Bug fixes (custom folder was not working as expected, multiple occurrences of same placeholder didnt work)
-- [#2] New command: *Add Podcast Notes from selection*
+- [#2, #5] New command: *Add Podcast Notes from selection*
     - fetches markdown links from selection
     - creates podcast note
     - replaces markdown link with link to podcast note
 
+*1.1.2*:
+- [#12] *Add Podcast Notes from selection* now working with pure links
+- 
+
 *1.2.0*:
 - Podcast Note is now working on Obsidian mobile
 
+*1.3.0*:
+- [#15] Notes on YouTube videos is now possible
+- [#14] Support for show notes (PocketCasts and Castro)
 

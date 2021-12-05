@@ -1,4 +1,4 @@
-import { App, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting, request, moment } from 'obsidian';
+import { App, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting, request, moment, htmlToMarkdown } from 'obsidian';
 
 interface PodcastNoteSettings {
 	podcastTemplate: string,
@@ -22,7 +22,8 @@ const hosts = {
 	"airr": "www.airr.io",
 	"overcast": "overcast.fm",
 	"castbox": "castbox.fm",
-	"castro": "castro.fm"
+	"castro": "castro.fm",
+	"youtube": "youtube.com"
 };
 
 
@@ -82,7 +83,13 @@ export default class PodcastNote extends Plugin {
 	}
 
 	async getHtml(url){
-		return await request({url: url, method: "GET"});
+		try	{
+			return await request({url: url, method: "GET"});
+		} catch(reason){
+			this.podcastError(url, "Couldnt load podcast data. No internet connection?");
+			console.log("No connection, reason: \n" + reason);
+			return undefined;
+		}
 	}
 
 	async addNotesFromList() {
@@ -117,14 +124,13 @@ export default class PodcastNote extends Plugin {
 	async getTitleAndPodcastString(url){
 		new Notice("Loading Podcast Info");
 		if (this.checkPodcastURL(url)){
-			try {
 				let html = await this.getHtml(url);
-				let root = this.getParsedHtml(html);
-				return this.getMetaDataForPodcast(root, url);
-			} catch (reason) {
-				this.podcastError(url, "Couldnt load podcast data. No internet connection?");
-				console.log("No connection, reason: \n" + reason);
-			}
+				if (html){
+					let root = this.getParsedHtml(html);
+					return await this.getMetaDataForPodcast(root, url);
+				} else{
+					return {"title": "","podcastString": ""};
+				}
 		} else {
 			this.podcastError(url, "This podcast service is not supported or the url is invalid.");
 		}
@@ -175,11 +181,17 @@ export default class PodcastNote extends Plugin {
 		return root;
 	}
 
-	getMetaDataForPodcast(root: Document, url: string) {
-		let date = moment().format("YYYY-MM-DD")
-		let title = "Title not found"
-		let desc = "Maybe the URL was invalid or inclompete. Open settings and check if your podcast service is supported."
-		let imageLink = ""
+	async getEpsiodeUUID(url){
+		return await this.getHtml(url)
+	}
+
+	async getMetaDataForPodcast(root: Document, url: string) {
+		let date = moment().format("YYYY-MM-DD");
+		let title = "Title not found";
+		let desc = "Description not found";
+		let imageLink = "";
+		let showNotes = "";
+		let episodeDate = "";
 
 		try {
 			if (url.includes(hosts.apple)) {
@@ -195,6 +207,26 @@ export default class PodcastNote extends Plugin {
 				title = root.querySelector("meta[name='og:title']").getAttribute('content');
 				desc = root.querySelector("meta[name='og:description']").getAttribute('content');
 				imageLink = root.querySelector("meta[name='og:image']").getAttribute('content');
+			} else if (url.includes(hosts.youtube)) {
+				title = root.querySelector("title").innerHTML;
+				desc = root.querySelector('#watch7-content > meta:nth-child(3)').getAttribute('content');
+				//desc = root.querySelector(".ytd-video-secondary-info-renderer").innerHTML;
+				imageLink = root.querySelector("meta[property='og:image']").getAttribute('content');
+			} else if (url.includes(hosts.pocketcasts)){
+				title = root.querySelector("meta[property='og:title']").getAttribute('content');
+				let script = root.querySelector("body > script").innerHTML;
+				let regex = /EPISODE_UUID = '(.*)'/gm;
+				let uuid = regex.exec(script)[1];
+				let json_notes = JSON.parse(await this.getEpsiodeUUID("https://cache.pocketcasts.com/share/episode/show_notes/" + uuid))["show_notes"];
+				showNotes = htmlToMarkdown(json_notes);
+				desc = root.querySelector("meta[property='og:description']").getAttribute('content');
+				episodeDate = root.querySelector("#episode_date").innerHTML;
+				imageLink = root.querySelector("meta[property='og:image']").getAttribute('content');
+			} else if (url.includes(hosts.castro)){
+				title = root.querySelector("meta[property='og:title']").getAttribute('content');
+				desc = root.querySelector("meta[property='og:description']").getAttribute('content');
+				imageLink = root.querySelector("meta[property='og:image']").getAttribute('content');
+				showNotes = htmlToMarkdown(root.querySelector(".co-supertop-castro-show-notes").innerHTML);
 			} else {
 				title = root.querySelector("meta[property='og:title']").getAttribute('content');
 				desc = root.querySelector("meta[property='og:description']").getAttribute('content');
@@ -204,11 +236,11 @@ export default class PodcastNote extends Plugin {
 			console.log("Error parsing: " + url);
 		}
 
-		let podcastString = this.applyTemplate(title, imageLink, desc, date, url);
+		let podcastString = this.applyTemplate(title, imageLink, desc, showNotes, episodeDate, date, url);
 		return { "podcastString": podcastString, "title": title };
 	}
 
-	applyTemplate(title, imageLink, desc, dateString, podcastLink) {
+	applyTemplate(title, imageLink, desc, showNotes, episodeDate, dateString, podcastLink) {
 		let podcastTemplate = this.settings.podcastTemplate;
 		podcastTemplate = podcastTemplate
 			.replace(/{{Title}}/g, title)
@@ -216,7 +248,9 @@ export default class PodcastNote extends Plugin {
 			.replace(/{{Description}}/g, desc)
 			.replace(/{{Date}}/g, dateString)
 			.replace(/{{Timestamp}}/g, Date.now().toString())
-			.replace(/{{PodcastURL}}/g, podcastLink);
+			.replace(/{{PodcastURL}}/g, podcastLink)
+			.replace(/{{ShowNotes}}/g, showNotes)
+			.replace(/{{EpisodeDate}}/g, episodeDate);
 		return podcastTemplate;
 	}
 
@@ -297,7 +331,7 @@ class PodcastNoteSettingTab extends PluginSettingTab {
 
 		new Setting(containerEl)
 			.setName('Template')
-			.setDesc("you can define your own template. Available placeholders are: {{Title}}, {{ImageURL}}, {{Description}}, {{PodcastURL}}, {{Date}}, {{Timestamp}}")
+			.setDesc("you can define your own template. Available placeholders are: {{Title}}, {{ImageURL}}, {{Description}}, {{ShowNotes}}, {{EpisodeDate}}, {{PodcastURL}}, {{Date}}, {{Timestamp}}")
 			.addTextArea((textarea) => {
 				textarea
 					.setValue(this.plugin.settings.podcastTemplate)
@@ -354,5 +388,6 @@ class PodcastNoteSettingTab extends PluginSettingTab {
 		ul.createEl("li", { text: "Airr" });
 		ul.createEl("li", { text: "Overcast" });
 		ul.createEl("li", { text: "Castro" });
+		ul.createEl("li", { text: "YouTube" });
 	}
 }
