@@ -4,14 +4,16 @@ interface PodcastNoteSettings {
 	podcastTemplate: string,
 	atCursor: boolean,
 	fileName: string,
-	folder: string
+	folder: string,
+	templatePath: string
 }
 
 const DEFAULT_SETTINGS: PodcastNoteSettings = {
 	podcastTemplate: "---\ntags: [Podcast]\ndate: {{Date}}\n---\n# {{Title}}\n![]({{ImageURL}})\n## Description:\n{{Description}}\n-> [Podcast Link]({{PodcastURL}})\n\n## Notes:\n",
 	atCursor: false,
 	fileName: "{{Title}} - Notes",
-	folder: ""
+	folder: "",
+	templatePath: ""
 };
 
 const hosts = {
@@ -58,7 +60,7 @@ export default class PodcastNote extends Plugin {
 			name: 'Add Podcast Notes from selection',
 
 			editorCallback: () => {
-				this.addNotesFromList();
+				this.addNotesFromSelection();
 			}
 		});
 	}
@@ -75,14 +77,17 @@ export default class PodcastNote extends Plugin {
 		await this.saveData(this.settings);
 	}
 
-	async getAirrQuoteTranscript(url){
-		let html = await this.getHtml(url);
-		let root = this.getParsedHtml(html);
-		let airrQuoteTranscript = root.querySelector(".quote_contextContainer__2afpx");
-		console.log(root);
-	}
+	// async getAirrQuoteTranscript(url: string){
+	// 	let html = await this.getHtml(url);
+	// 	let root = this.getParsedHtml(html);
+	// 	let airrQuoteTranscript = root.querySelector(".quote_contextContainer__2afpx");
+	// 	console.log(root);
+	// }
 
-	async getHtml(url){
+	// ------------------
+	// Utility functions
+	// ------------------
+	async loadHTML(url: string){
 		try	{
 			return await request({url: url, method: "GET"});
 		} catch(reason){
@@ -92,7 +97,60 @@ export default class PodcastNote extends Plugin {
 		}
 	}
 
-	async addNotesFromList() {
+	parseHTML(s: string) {
+		let parser = new DOMParser();
+		let root = parser.parseFromString(s, "text/html");
+		return root;
+	}
+
+	async loadEpisodeUUID(url: string){
+		return await this.loadHTML(url)
+	}
+
+	checkPodcastURL(url: string) {
+		if (new RegExp(Object.values(hosts).join("|")).test(url)) {
+			return true;
+		} else {
+			new Notice("This podcast service is not supported.");
+			return false;
+		}
+	}
+
+	podcastError(url: string, msg: string){
+		new Notice(msg);
+		this.addNewNote("# Notes on podcast\n-> [Podcast Link](" + url + ")\n", "Default");
+	}
+
+	getEditor() {
+		let mdView = this.app.workspace.getActiveViewOfType(MarkdownView);
+		return mdView.editor;
+	}
+
+	// ------------------
+	// Add notes / Commands
+	// ------------------
+
+	addAtCursor(s: string) {
+		let editor = this.getEditor();
+		if (editor){
+			let currentLine = editor.getCursor();
+			editor.replaceRange(s, currentLine, currentLine);
+		} else {
+			new Notice("You have to be in the editor to do this.");
+		}
+	}
+
+	addNewNote(s: string, title: string) {
+		let fileName = this.settings.fileName
+						.replace(/{{Title}}/g, title)
+						.replace(/{{Timestamp}}/g, Date.now().toString())
+						.replace(/{{Date}}/g, moment().format("YYYY-MM-DD"));
+		fileName = fileName.replace(/[\\/:"*?<>|]*/g, '');
+		this.app.vault.create(this.settings.folder + "/" + fileName + ".md", s);
+		return fileName;
+	}
+
+	async addNotesFromSelection() {
 
 		let editor = this.getEditor();
 		if (editor){
@@ -121,12 +179,16 @@ export default class PodcastNote extends Plugin {
 		this.addAtCursor(podcastString);
 	}
 
-	async getTitleAndPodcastString(url){
+	// ------------------
+	// Load Podcast metadata
+	// ------------------
+
+	async getTitleAndPodcastString(url: string){
 		new Notice("Loading Podcast Info");
 		if (this.checkPodcastURL(url)){
-				let html = await this.getHtml(url);
+				let html = await this.loadHTML(url);
 				if (html){
-					let root = this.getParsedHtml(html);
+					let root = this.parseHTML(html);
 					return await this.getMetaDataForPodcast(root, url);
 				} else{
 					return {"title": "","podcastString": ""};
@@ -161,29 +223,6 @@ export default class PodcastNote extends Plugin {
 		return podcasts;
 	}
 
-	podcastError(url, msg){
-		new Notice(msg);
-		this.addNewNote("# Notes on podcast\n-> [Podcast Link](" + url + ")\n", "Default");
-	}
-
-	checkPodcastURL(url: string) {
-		if (new RegExp(Object.values(hosts).join("|")).test(url)) {
-			return true;
-		} else {
-			new Notice("This is not a valid podcast Service.");
-			return false;
-		}
-	}
-
-	getParsedHtml(s) {
-		let parser = new DOMParser();
-		let root = parser.parseFromString(s, "text/html");
-		return root;
-	}
-
-	async getEpsiodeUUID(url){
-		return await this.getHtml(url)
-	}
 
 	async getMetaDataForPodcast(root: Document, url: string) {
 		let date = moment().format("YYYY-MM-DD");
@@ -216,11 +255,17 @@ export default class PodcastNote extends Plugin {
 				title = root.querySelector("meta[property='og:title']").getAttribute('content');
 				let script = root.querySelector("body > script").innerHTML;
 				let regex = /EPISODE_UUID = '(.*)'/gm;
-				let uuid = regex.exec(script)[1];
-				let json_notes = JSON.parse(await this.getEpsiodeUUID("https://cache.pocketcasts.com/share/episode/show_notes/" + uuid))["show_notes"];
-				showNotes = htmlToMarkdown(json_notes);
+				let uuid = regex.exec(script);
+				if (uuid){
+					let json_notes = JSON.parse(await this.loadEpisodeUUID("https://cache.pocketcasts.com/share/episode/show_notes/" + uuid[1]))["show_notes"];
+					showNotes = htmlToMarkdown(json_notes);
+				}
 				desc = root.querySelector("meta[property='og:description']").getAttribute('content');
-				episodeDate = root.querySelector("#episode_date").innerHTML;
+				let episodeDateHTML = root.querySelector("#episode_date")
+				if (episodeDateHTML){
+					episodeDate = episodeDateHTML.innerHTML;
+				}
+				
 				imageLink = root.querySelector("meta[property='og:image']").getAttribute('content');
 			} else if (url.includes(hosts.castro)){
 				title = root.querySelector("meta[property='og:title']").getAttribute('content');
@@ -232,16 +277,40 @@ export default class PodcastNote extends Plugin {
 				desc = root.querySelector("meta[property='og:description']").getAttribute('content');
 				imageLink = root.querySelector("meta[property='og:image']").getAttribute('content');
 			}
-		} catch {
+		} catch (e) {
 			console.log("Error parsing: " + url);
+			console.log(e);
 		}
 
-		let podcastString = this.applyTemplate(title, imageLink, desc, showNotes, episodeDate, date, url);
+		// Obsidian mobile can only transclude images with https urls
+		if (!imageLink.startsWith("https")){
+			imageLink = imageLink.replace("http", "https");
+		}
+
+		let podcastString = await this.applyTemplate(title, imageLink, desc, showNotes, episodeDate, date, url);
 		return { "podcastString": podcastString, "title": title };
 	}
 
-	applyTemplate(title, imageLink, desc, showNotes, episodeDate, dateString, podcastLink) {
-		let podcastTemplate = this.settings.podcastTemplate;
+
+	// ------------------
+	// Apply Template
+	// ------------------
+
+	async getTemplatePath(){
+		if (this.settings.templatePath != ""){
+			let path = this.settings.templatePath
+			if (!path.endsWith(".md")){
+				path += ".md";
+			}
+			let file = this.app.metadataCache.getFirstLinkpathDest(path, '');
+			return await this.app.vault.read(file)
+		}else{
+			return this.settings.podcastTemplate;
+		}
+	}
+
+	async applyTemplate(title: string, imageLink: string, desc: string, showNotes: string, episodeDate: string, dateString: string, podcastLink: string) {
+		let podcastTemplate = await this.getTemplatePath();
 		podcastTemplate = podcastTemplate
 			.replace(/{{Title}}/g, title)
 			.replace(/{{ImageURL}}/g, imageLink)
@@ -253,32 +322,6 @@ export default class PodcastNote extends Plugin {
 			.replace(/{{EpisodeDate}}/g, episodeDate);
 		return podcastTemplate;
 	}
-
-	addAtCursor(s: string) {
-		let editor = this.getEditor();
-		if (editor){
-			let currentLine = editor.getCursor();
-			editor.replaceRange(s, currentLine, currentLine);
-		} else {
-			new Notice("You have to be in the editor to do this.");
-		}
-	}
-
-	getEditor() {
-		let mdView = this.app.workspace.getActiveViewOfType(MarkdownView);
-		return mdView.editor;
-	}
-
-	addNewNote(s: string, title: string) {
-		let fileName = this.settings.fileName
-						.replace(/{{Title}}/g, title)
-						.replace(/{{Timestamp}}/g, Date.now().toString())
-						.replace(/{{Date}}/g, moment().format("YYYY-MM-DD"));
-		fileName = fileName.replace(/[\\/:"*?<>|]*/g, '');
-		this.app.vault.create(this.settings.folder + "/" + fileName + ".md", s);
-		return fileName;
-	}
-
 }
 
 
@@ -331,7 +374,7 @@ class PodcastNoteSettingTab extends PluginSettingTab {
 
 		new Setting(containerEl)
 			.setName('Template')
-			.setDesc("you can define your own template. Available placeholders are: {{Title}}, {{ImageURL}}, {{Description}}, {{ShowNotes}}, {{EpisodeDate}}, {{PodcastURL}}, {{Date}}, {{Timestamp}}")
+			.setDesc("Define your own template. Available placeholders are: {{Title}}, {{ImageURL}}, {{Description}}, {{ShowNotes}}, {{EpisodeDate}}, {{PodcastURL}}, {{Date}}, {{Timestamp}}")
 			.addTextArea((textarea) => {
 				textarea
 					.setValue(this.plugin.settings.podcastTemplate)
@@ -345,6 +388,18 @@ class PodcastNoteSettingTab extends PluginSettingTab {
 			);
 
 		new Setting(containerEl)
+			.setName("Template File")
+			.setDesc("Define your own template in a .md file. Enter the path here (relative to vault)")
+			.addTextArea(textarea => textarea 
+				.setValue(this.plugin.settings.templatePath)
+				.setPlaceholder("path/to/template")
+				.onChange(async () => {
+					this.plugin.settings.templatePath = textarea.getValue();
+					await this.plugin.saveSettings();
+				})
+			)
+
+		new Setting(containerEl)
 			.setName('Folder')
 			.setDesc('New Podcast Notes will be saved here (default: Vault folder)')
 			.addTextArea(textarea => textarea
@@ -352,7 +407,7 @@ class PodcastNoteSettingTab extends PluginSettingTab {
 				.setPlaceholder("example: Podcasts")
 				.onChange(async () => {
 					this.plugin.settings.folder = textarea.getValue();
-					await this.plugin.saveSettings()
+					await this.plugin.saveSettings();
 				})
 			);
 
