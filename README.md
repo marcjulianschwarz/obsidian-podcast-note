@@ -108,3 +108,6 @@ The numbers in "[]" are the issue numbers associated with the fix or feature.
 - [#15] Notes on YouTube videos is now possible
 - [#14] Support for show notes (PocketCasts and Castro)
 
+*1.3.0*:
+- [#18] Fix ImageURL bug for mobile devices
+- [#17] Add option to use markdown file as template
