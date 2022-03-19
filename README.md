@@ -1,3 +1,7 @@
+<p align="center">
+<img width="180" src="https://user-images.githubusercontent.com/67844154/159135750-7bfb6623-ba92-4344-9426-8a43ed2de379.png">
+</p>
+
 # Podcast Note
 
 *Podcast Note* is a great way to write notes on podcasts. With a single URL you will get the title, image and description of your podcast.
