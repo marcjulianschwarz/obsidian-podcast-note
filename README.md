@@ -85,9 +85,6 @@ Specify whether you want to create a new note or whether you want the metadata t
 ## Questions
 If you have any questions, feedback or feature requests, let me know and write a mail at [marc-julian.de](https://www.marc-julian.de) or create a new issue on <a href="https://github.com/marcjulianschwarz/obsidian-podcast-note">GitHub</a>
 
-Do you like the plugin?<br><br>
-<a href="https://www.buymeacoffee.com/marcjulian" target="_blank"><img src="https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png" alt="Buy Me A Coffee" style="height: 41px !important;width: 174px !important;box-shadow: 0px 3px 2px 0px rgba(190, 190, 190, 0.5) !important;-webkit-box-shadow: 0px 3px 2px 0px rgba(190, 190, 190, 0.5) !important;" ></a>
-
 ## Future versions will include:
 See <a href="https://github.com/marcjulianschwarz/obsidian-podcast-note/issues">issues for Podcast Note</a>.
 
