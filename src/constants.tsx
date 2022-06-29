@@ -19,6 +19,7 @@ export const HOSTS = {
   castbox: "castbox.fm",
   castro: "castro.fm",
   youtube: "youtube.com",
+  addict: "podcastaddict.com",
 };
 
 export const DEFAULT_PODCAST: Podcast = {

@@ -112,6 +112,10 @@ export class PodcastParser {
       podcast.showNotes = htmlToMarkdown(
         root.querySelector(".co-supertop-castro-show-notes")?.innerHTML || ""
       );
+    } else if (url.includes(HOSTS.addict)) {
+      podcast.title = this.metaOG(root, "property", "title");
+      podcast.desc = this.metaOG(root, "property", "description");
+      podcast.imageLink = this.metaOG(root, "property", "image");
     } else {
       podcast.title = this.metaOG(root, "property", "title");
       podcast.desc = this.metaOG(root, "property", "description");
@@ -156,7 +160,7 @@ export class PodcastParser {
     while ((m = reg.exec(selection)) !== null) {
       let url = m[2];
       let linkTitle = m[1];
-      podcasts.push({ url: url, alias: " | " + linkTitle, markdown: m[0] });
+      podcasts.push({ url: url, alias: "|" + linkTitle, markdown: m[0] });
     }
 
     // Search for pure links
