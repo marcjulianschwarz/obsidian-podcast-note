@@ -25,7 +25,19 @@ export class PodcastParser {
     return response;
   }
 
-  async applyTemplate(podcast: Podcast): Promise<PodcastNote> {
+  sanitizeString(str: string) {
+    return str.replace(/[\-|\{|\}|:|,|\[|\]|\||\>|\<|\#|\"|\']/g, " ");
+  }
+
+  sanitizePodcast(podcast: Podcast) {
+    podcast.title = this.sanitizeString(podcast.title);
+    podcast.desc = this.sanitizeString(podcast.desc);
+    podcast.showNotes = this.sanitizeString(podcast.showNotes);
+    return podcast;
+  }
+
+  applyTemplate(podcast: Podcast): PodcastNote {
+    podcast = this.sanitizePodcast(podcast);
     let content = this.template
       .replace(/{{Title}}/g, podcast.title)
       .replace(/{{ImageURL}}/g, podcast.imageLink)
@@ -135,7 +147,7 @@ export class PodcastParser {
 
     if (root) {
       let podcast = await this.loadPodcast(root, url);
-      let podcastNote = await this.applyTemplate(podcast);
+      let podcastNote = this.applyTemplate(podcast);
       return podcastNote;
     } else {
       return { title: "", content: "" };
