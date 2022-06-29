@@ -123,15 +123,18 @@ export default class PodcastNote extends Plugin {
       for (let link of links) {
         if (parser.isPodcastURLSupported(link.url)) {
           let podcastNote = await parser.getPodcastNote(link.url);
-          nc.createPodcastNote(podcastNote, this.settings.folder);
+          let filename = nc.createPodcastNote(
+            podcastNote,
+            this.settings.folder
+          );
 
           selection = selection.replace(
             link.markdown,
-            "[[" + podcastNote.title + link.alias + "]]"
+            "[[" + filename + link.alias + "]]"
           );
-          editor.replaceSelection(selection);
         }
       }
+      editor.replaceSelection(selection);
     } else {
       new Notice("You have to be in the editor to do this.");
     }
