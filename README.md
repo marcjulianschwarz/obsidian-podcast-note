@@ -28,6 +28,7 @@ So far these podcast services are supported:
 - Overcast
 - Castro
 - Castbox
+- Podcast Addict
 - YouTube
 
 ## Demo

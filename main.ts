@@ -263,6 +263,7 @@ class PodcastNoteSettingTab extends PluginSettingTab {
     ul.createEl("li", { text: "Airr" });
     ul.createEl("li", { text: "Overcast" });
     ul.createEl("li", { text: "Castro" });
+    ul.createEl("li", { text: "Podcast Addict" });
     ul.createEl("li", { text: "YouTube" });
   }
 }
