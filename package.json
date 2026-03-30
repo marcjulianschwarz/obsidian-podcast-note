@@ -3,23 +3,31 @@
   "version": "0.12.0",
   "description": "Podcast Note lets you automatically add podcast information to your notes.",
   "main": "main.js",
+  "type": "module",
   "scripts": {
     "dev": "rollup --config rollup.config.js -w",
-    "build": "rollup --config rollup.config.js --environment BUILD:production"
+    "build": "rollup --config rollup.config.js --environment BUILD:production",
+    "test": "vitest run",
+    "devbuild": "rollup --config rollup.config.js --environment BUILD:production && cp main.js manifest.json $HOME/Mac/GitHub/marcjulianschwarz/obsidian/obsidian-raycast-test/.obsidian/plugins/podcast-note/",
+    "release": "yarn build && node -e \"const v = require('./manifest.json').version; require('child_process').execSync('gh release create ' + v + ' main.js manifest.json styles.css --title ' + v + ' --generate-notes', {stdio: 'inherit'})\""
   },
   "keywords": [],
   "author": "",
   "license": "MIT",
   "devDependencies": {
-    "@rollup/plugin-commonjs": "^18.0.0",
-    "@rollup/plugin-node-resolve": "^11.2.1",
-    "@rollup/plugin-typescript": "^8.2.1",
-    "@types/node": "^14.14.37",
-    "obsidian": "^0.14.6",
-    "rollup": "^2.32.1",
-    "tslib": "^2.2.0",
-    "typescript": "^4.2.4",
+    "@rollup/plugin-commonjs": "^29",
+    "@rollup/plugin-node-resolve": "^16",
+    "@rollup/plugin-typescript": "^12",
+    "@types/node": "^25.5.0",
+    "json-schema": ">=0.4.0",
     "nth-check": ">=2.0.1",
-    "json-schema": ">=0.4.0"
+    "obsidian": "^1.12.3",
+    "rollup": "^4",
+    "tslib": "^2.2.0",
+    "typescript": "^6",
+    "vitest": "^4.1.2"
+  },
+  "dependencies": {
+    "@electron/remote": "^2"
   }
 }

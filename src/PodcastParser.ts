@@ -1,5 +1,5 @@
 import { DEFAULT_PODCAST, HOSTS } from "./constants";
-import { Notice, moment, htmlToMarkdown, request } from "obsidian";
+import { Notice, htmlToMarkdown, request } from "obsidian";
 import { Podcast, PodcastNote, PodcastTextURL } from "./interfaces";
 
 export class PodcastParser {
@@ -52,7 +52,7 @@ export class PodcastParser {
 
   metaOG(root: Document, attribute: string, og: string) {
     let titleTag = root.querySelector(
-      "meta[" + attribute + "='og:" + og + "']"
+      "meta[" + attribute + "='og:" + og + "']",
     );
     if (titleTag) {
       let title = titleTag.getAttribute("content");
@@ -66,7 +66,7 @@ export class PodcastParser {
   async loadPodcast(root: Document, url: string): Promise<Podcast> {
     let podcast = DEFAULT_PODCAST;
     podcast.url = url;
-    podcast.date = moment().format("YYYY-MM-DD");
+    podcast.date = window.moment().format("YYYY-MM-DD");
 
     if (url.includes(HOSTS.apple)) {
       podcast.title = this.metaOG(root, "property", "title");
@@ -104,8 +104,8 @@ export class PodcastParser {
           let json_notes = JSON.parse(
             await this.loadEpisodeUUID(
               "https://cache.pocketcasts.com/share/episode/show_notes/" +
-                uuid[1]
-            )
+                uuid[1],
+            ),
           )["show_notes"];
           podcast.showNotes = htmlToMarkdown(json_notes);
         }
@@ -122,7 +122,7 @@ export class PodcastParser {
       podcast.desc = this.metaOG(root, "property", "description");
       podcast.imageLink = this.metaOG(root, "property", "image");
       podcast.showNotes = htmlToMarkdown(
-        root.querySelector(".co-supertop-castro-show-notes")?.innerHTML || ""
+        root.querySelector(".co-supertop-castro-show-notes")?.innerHTML || "",
       );
     } else if (url.includes(HOSTS.addict)) {
       podcast.title = this.metaOG(root, "property", "title");

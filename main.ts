@@ -14,7 +14,7 @@ import { PodcastParser } from "./src/PodcastParser";
 import { NoteCreator } from "./src/NoteCreator";
 
 export default class PodcastNote extends Plugin {
-  settings: PodcastNoteSettings;
+  settings: PodcastNoteSettings = DEFAULT_SETTINGS;
 
   async onload() {
     console.log("loading plugin PodcastNote");
@@ -117,7 +117,7 @@ export default class PodcastNote extends Plugin {
 
     if (editor) {
       let selection = editor.getSelection();
-      let links = await parser.getPodcastURLsFromSelection(selection);
+      let links = parser.getPodcastURLsFromSelection(selection);
       let nc = new NoteCreator(this.app, this.settings.fileName);
 
       for (let link of links) {
@@ -125,12 +125,12 @@ export default class PodcastNote extends Plugin {
           let podcastNote = await parser.getPodcastNote(link.url);
           let filename = nc.createPodcastNote(
             podcastNote,
-            this.settings.folder
+            this.settings.folder,
           );
 
           selection = selection.replace(
             link.markdown,
-            "[[" + filename + link.alias + "]]"
+            "[[" + filename + link.alias + "]]",
           );
         }
       }
@@ -190,7 +190,7 @@ class PodcastNoteSettingTab extends PluginSettingTab {
     new Setting(containerEl)
       .setName("Template")
       .setDesc(
-        "Define your own template. Available placeholders are: {{Title}}, {{ImageURL}}, {{Description}}, {{ShowNotes}}, {{EpisodeDate}}, {{PodcastURL}}, {{Date}}, {{Timestamp}}"
+        "Define your own template. Available placeholders are: {{Title}}, {{ImageURL}}, {{Description}}, {{ShowNotes}}, {{EpisodeDate}}, {{PodcastURL}}, {{Date}}, {{Timestamp}}",
       )
       .addTextArea((textarea) => {
         textarea
@@ -206,7 +206,7 @@ class PodcastNoteSettingTab extends PluginSettingTab {
     new Setting(containerEl)
       .setName("Template File")
       .setDesc(
-        "Define your own template in a .md file. Enter the path here (relative to vault)"
+        "Define your own template in a .md file. Enter the path here (relative to vault)",
       )
       .addTextArea((textarea) =>
         textarea
@@ -215,7 +215,7 @@ class PodcastNoteSettingTab extends PluginSettingTab {
           .onChange(async () => {
             this.plugin.settings.templatePath = textarea.getValue();
             await this.plugin.saveSettings();
-          })
+          }),
       );
 
     new Setting(containerEl)
@@ -228,19 +228,19 @@ class PodcastNoteSettingTab extends PluginSettingTab {
           .onChange(async () => {
             this.plugin.settings.folder = textarea.getValue();
             await this.plugin.saveSettings();
-          })
+          }),
       );
 
     new Setting(containerEl)
       .setName("Filename template")
       .setDesc(
-        'Filename template when "New note" is selected. Available placeholders are {{Title}}, {{Timestamp}}, {{Date}}'
+        'Filename template when "New note" is selected. Available placeholders are {{Title}}, {{Timestamp}}, {{Date}}',
       )
       .addTextArea((textarea) =>
         textarea.setValue(this.plugin.settings.fileName).onChange(async () => {
           this.plugin.settings.fileName = textarea.getValue();
           await this.plugin.saveSettings();
-        })
+        }),
       );
 
     new Setting(containerEl)
@@ -250,7 +250,7 @@ class PodcastNoteSettingTab extends PluginSettingTab {
         toggle.setValue(this.plugin.settings.atCursor).onChange(async () => {
           this.plugin.settings.atCursor = toggle.getValue();
           await this.plugin.saveSettings();
-        })
+        }),
       );
 
     containerEl.createEl("hr");

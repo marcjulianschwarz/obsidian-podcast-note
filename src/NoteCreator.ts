@@ -1,4 +1,4 @@
-import { Editor, Notice, moment, App } from "obsidian";
+import { Editor, Notice, App } from "obsidian";
 import { PodcastNote } from "./interfaces";
 
 export class NoteCreator {
@@ -19,7 +19,7 @@ export class NoteCreator {
     return this.filenameTemplate
       .replace(/{{Title}}/g, podcast.title)
       .replace(/{{Timestamp}}/g, Date.now().toString())
-      .replace(/{{Date}}/g, moment().format("YYYY-MM-DD"))
+      .replace(/{{Date}}/g, window.moment().format("YYYY-MM-DD"))
       .replace(/[\\/:"*?<>|]*/g, "");
   }
 
